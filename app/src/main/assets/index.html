@@ -312,6 +312,7 @@ function load() {
   // 2.2 added the Paycheck calculator tile: give it to existing installs once (she can delete it).
   if (!S.payAdded) { if (!S.tiles.some(t => t.kind === 'pay')) S.tiles.push({id: 'pay', name: 'Paycheck', kind: 'pay', icon: 'calc', pay: defPay()}); S.payAdded = true; save(); }
   if (S.autoUpd == null) S.autoUpd = true;
+  for (const t of S.tiles) if (t.kind === 'pay' && (!t.pay || t.pay.v !== 2)) { const r = t.pay ? t.pay.rate : 0; t.pay = defPay(); t.pay.rate = r || 0; }
 }
 function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { toast('Could not save on this phone'); } }
 const tileOf = id => S.tiles.find(t => t.id === id);
@@ -419,7 +420,7 @@ function choose(title, opts, msg) {
   });
 }
 window.appBack = function () { if (stack.length) { closeTop(); return true; } return false; };
-function refresh() { renderHome(); for (const s of stack) if (s.el._draw) s.el._draw(); }
+function refresh() { syncPredictions(); renderHome(); for (const s of stack) if (s.el._draw) s.el._draw(); }
 
 /* ---------- HOME ---------- */
 function renderHome() {
@@ -492,7 +493,7 @@ function row(T, e) {
   const lead = T.kind === 'check'
     ? `<button class="ck ${e.done ? 'on' : ''}" data-ck="${it.id}" data-d="${e.d}" aria-label="Mark paid">${ic('check')}</button>`
     : `<div class="bub ${T.kind}">${T.kind === 'in' ? '+' : MINUS}</div>`;
-  return `<div class="row ${e.done ? 'done' : ''}" data-it="${it.id}" data-d="${e.d}">${lead}<div class="mid"><div class="nm">${esc(it.name || T.name)}</div><div class="sub">${T.kind === 'check' ? `<span>Due ${shortD(e.d)}</span>` : ''}${rt ? `<span class="tag">${ic('repeat')}${rt}</span>` : ''}${it.note ? `<span>${esc(it.note)}</span>` : ''}</div></div><div class="amt ${kindClass(T.kind)}">${signed(it.amt, T.kind)}</div></div>`;
+  return `<div class="row ${e.done ? 'done' : ''}" data-it="${it.id}" data-d="${e.d}">${lead}<div class="mid"><div class="nm">${esc(it.name || T.name)}</div><div class="sub">${T.kind === 'check' ? `<span>Due ${shortD(e.d)}</span>` : ''}${it.pred ? '<span class="tag">Predicted</span>' : ''}${rt ? `<span class="tag">${ic('repeat')}${rt}</span>` : ''}${it.note ? `<span>${esc(it.note)}</span>` : ''}</div></div><div class="amt ${kindClass(T.kind)}">${signed(it.amt, T.kind)}</div></div>`;
 }
 function wireRows(el) {
   el.querySelectorAll('[data-ck]').forEach(b => b.onclick = ev => {
@@ -533,6 +534,7 @@ function itemForm(it0, occDate) {
   const ph = T.kind === 'in' ? 'e.g. Paycheck' : T.kind === 'out' ? 'e.g. Groceries' : 'e.g. Rent';
   const names = [...new Set(S.items.filter(i => i.tile === T.id && i.name).map(i => i.name))].slice(0, 40);
   const body = `<div class="form">
+    ${it0.pred ? `<div class="summary" style="margin-top:14px">This paycheck is a prediction from your Paycheck tile. When the money lands, type the real amount and save; then it's final.</div>` : ''}
     <div class="amtbox"><span class="sg ${kindClass(T.kind)}">${T.kind === 'in' ? '+' : T.kind === 'out' ? MINUS : ''}${esc(S.currency)}</span><input id="fAmt" class="${kindClass(T.kind)}" inputmode="decimal" placeholder="0.00" value="${it.amt === '' ? '' : r2(it.amt).toFixed(2)}" autocomplete="off"></div>
     <div class="fld"><label>${T.kind === 'check' ? 'What do you pay?' : 'What is it?'}</label><input id="fName" list="fNames" value="${esc(it.name)}" placeholder="${ph}" autocomplete="off"><datalist id="fNames">${names.map(n => `<option value="${esc(n)}">`).join('')}</datalist></div>
     <div class="fld"><label>${T.kind === 'check' ? 'Due date' : 'Date'}${!isNew && repeats(it) ? ' (first one)' : ''}</label><input type="date" id="fDate" value="${it.date}"></div>
@@ -582,7 +584,7 @@ function itemForm(it0, occDate) {
       }
       const rec = {id: it.id || uid(), tile: T.id, name: q('#fName').value.trim(), amt, date, rep: r, note: q('#fNote').value.trim(), done: it.done || {}, skip: it.skip || {}};
       const i = S.items.findIndex(x => x.id === rec.id);
-      if (i >= 0) S.items[i] = rec; else S.items.push(rec);
+      if (i >= 0) S.items[i] = rec; else S.items.push(rec);   // a saved prediction drops its pred flag and becomes a real entry
       save(); closeTop();
       // a one-off saved into another month: jump there so she sees it
       if (isNew && !r && date.slice(0, 7) !== curM) curM = date.slice(0, 7);
@@ -602,6 +604,7 @@ function itemForm(it0, occDate) {
       if (how === 'one') { cur.skip = cur.skip || {}; cur.skip[occDate] = true; }
       else if (how === 'after' && occDate > cur.date) { cur.rep.end = 'until'; cur.rep.until = addDays(occDate, -1); delete cur.rep.count; }
       else S.items = S.items.filter(x => x.id !== cur.id);
+      if (cur.pred) { const [, tid, day] = cur.id.split(':'); const pt = tileOf(tid); if (pt && pt.pay) { pt.pay.noPred = pt.pay.noPred || {}; pt.pay.noPred[day] = true; } }
       save(); closeTop(); refresh(); toast('Deleted');
     };
   }});
@@ -653,159 +656,351 @@ function tileForm(t) {
   }});
 }
 
-/* ---------- PAY CALCULATOR ---------- */
-// Taxes default to typical rates and are labelled estimates; Settings → "Match a pay stub" tunes them to her real checks.
-function defPay() {
-  return {rate: 0, freq: '2week', otAfter: 40, otMult: 1.5, hours: {w1: '', w2: '', hol: '', dt: '', extra: ''},
-    ded: [
-      {id: 'fed', name: 'Federal income tax', mode: 'pct', val: 10, when: 'tax'},
-      {id: 'ss', name: 'Social Security', mode: 'pct', val: 6.2, when: 'tax'},
-      {id: 'med', name: 'Medicare', mode: 'pct', val: 1.45, when: 'tax'},
-      {id: 'az', name: 'Arizona state tax', mode: 'pct', val: 2, when: 'tax'},
-      {id: 'health', name: 'Health insurance', mode: 'amt', val: 0, when: 'pre'},
-      {id: 'ret', name: 'Retirement (401k / 403b)', mode: 'pct', val: 0, when: 'pre'}
-    ]};
-}
+/* ---------- PAY ---------- */
+// The Paycheck tile plans upcoming pay periods (hours, overtime, premiums) and predicts each check like a real pay stub.
+// 2026 federal brackets and standard deductions (IRS Rev. Proc. 2025-32), used with the Pub 15-T percentage method.
+const FED26 = {
+  single: {std: 16100, br: [12400, 50400, 105700, 201775, 256225, 640600]},
+  mfj: {std: 32200, br: [24800, 100800, 211400, 403550, 512450, 768700]},
+  hoh: {std: 24150, br: [17700, 67450, 105700, 201750, 256200, 640600]}
+};
+const FED_RATES = [.10, .12, .22, .24, .32, .35, .37];
 const num = v => { const n = parseFloat(String(v == null ? '' : v).replace(/[^\d.]/g, '')); return isFinite(n) ? n : 0; };
 const numS = v => { const n = parseFloat(String(v == null ? '' : v).replace(/[^\d.\-]/g, '')); return isFinite(n) ? n : 0; };
 const hrs = n => `${r2(n)} hr${r2(n) === 1 ? '' : 's'}`;
-// Everything that comes out of a check for a given gross: before-tax items, then taxes on what's left, then after-tax items.
-function deductions(p, gross) {
-  const cut = [], amt = (d, base) => d.mode === 'pct' ? base * numS(d.val) / 100 : numS(d.val);
-  let pre = 0, tax = 0, post = 0;
-  for (const d of p.ded) if (d.when === 'pre') { const v = amt(d, gross); if (v) { cut.push({l: d.name, v}); pre += v; } }
-  const taxable = Math.max(0, gross - pre);
-  for (const d of p.ded) if (d.when === 'tax') { const v = amt(d, taxable); if (v) { cut.push({l: d.name, v}); tax += v; } }
-  for (const d of p.ded) if (d.when === 'post') { const v = amt(d, gross); if (v) { cut.push({l: d.name, v}); post += v; } }
-  return {cut, total: r2(pre + tax + post), net: r2(Math.max(0, gross - pre - tax - post))};
+const dBetween = (a, b) => Math.round((pd(b) - pd(a)) / 864e5);
+// Federal withholding for one check from a 2020+ W-4.
+function fedWithhold(taxable, perYear, f) {
+  const T = FED26[f.status] || FED26.single;
+  let std = T.std, br = T.br;
+  if (f.step2) { std /= 2; br = br.map(b => b / 2); }   // W-4 step 2 box: half the deduction and brackets
+  const x = Math.max(0, taxable * perYear - std);
+  let tax = 0, prev = 0;
+  for (let i = 0; i < FED_RATES.length; i++) { const top = i < br.length ? br[i] : Infinity; if (x > prev) tax += (Math.min(x, top) - prev) * FED_RATES[i]; prev = top; }
+  return Math.max(0, tax - num(f.deps)) / perYear + num(f.extra);
 }
-function payCalc(p, h) {
-  const weeks = p.freq === '2week' ? [num(h.w1), num(h.w2)] : [num(h.w1)];
-  const cap = num(p.otAfter) || 40, rate = num(p.rate), mult = num(p.otMult) || 1.5;
-  let reg = 0, ot = 0;
-  for (const w of weeks) { reg += Math.min(w, cap); ot += Math.max(0, w - cap); }   // overtime counts per week
-  const hol = num(h.hol), dt = num(h.dt), extra = num(h.extra), lines = [];
+function defPay() {
+  return {v: 2, rate: 0, every: 14, otAfter: 40, otMult: 1.5, start: '', lag: 5,
+    usual: {h: 40, prem: {}},
+    prem: [{id: 'wknd', name: 'Weekend premium', rate: 0}],
+    paid: [{id: 'hol', name: 'Holiday', rate: 0}, {id: 'pto', name: 'Paid time off', rate: 0}, {id: 'sick', name: 'Sick', rate: 0}],
+    holidays: [], pre: [], imputed: 0, fed: {status: 'single', step2: false, deps: 0, extra: 0}, state: {name: 'State tax', pct: 0},
+    post: [], plans: {}, stubs: [], showPred: true, adj: 0};
+}
+const perYear = p => (num(p.every) || 14) === 7 ? 52 : 26;
+const weeksIn = p => (num(p.every) || 14) === 7 ? 1 : 2;
+// Pay periods whose payday is on or after `from`.
+function payPeriods(p, from, n) {
+  const days = num(p.every) || 14, out = [];
+  if (!p.start) return out;
+  let k = Math.floor(dBetween(p.start, from) / days) - 2;
+  while (out.length < n && k < 9999) {
+    const start = addDays(p.start, k * days), end = addDays(start, days - 1), payday = addDays(end, num(p.lag));
+    if (payday >= from) out.push({start, end, payday});
+    k++;
+  }
+  return out;
+}
+const holidaysIn = (p, per) => (p.holidays || []).filter(h => h.date >= per.start && h.date <= per.end);
+// What she plans to work in a period: her own plan if she made one, else her usual week (+ any paid holiday in it).
+function planFor(p, per) {
+  if (p.plans[per.start]) return p.plans[per.start];
+  const w = weeksIn(p), u = p.usual || {h: 40, prem: {}}, prem = {};
+  for (const pr of p.prem) if (num((u.prem || {})[pr.id])) prem[pr.id] = Array(w).fill(num(u.prem[pr.id]));
+  const hol = holidaysIn(p, per).reduce((t, h) => t + num(h.h || 8), 0);
+  return {w: Array(w).fill(num(u.h)), prem, paid: hol ? {hol} : {}, bonus: 0, usual: true};
+}
+function payFor(p, plan) {
+  const rate = num(p.rate), cap = num(p.otAfter) || 40, mult = num(p.otMult) || 1.5, lines = [];
+  let reg = 0, ot = 0, otPrem = 0, worked = 0;
+  const premTot = {}, nW = (plan.w || []).length;
+  // paid time marked "counts in overtime rate" (like on-call pay) raises that week's average rate; it lands in the last week
+  const rrPay = p.paid.filter(t => t.rr).reduce((s, t) => s + num((plan.paid || {})[t.id]) * (num(t.rate) || rate), 0);
+  (plan.w || []).forEach((hRaw, i) => {
+    const h = num(hRaw); worked += h;
+    let straight = h * rate + (i === nW - 1 ? rrPay : 0);
+    for (const pr of p.prem) {
+      const ph = num(((plan.prem || {})[pr.id] || [])[i]); if (!ph) continue;
+      const v = ph * num(pr.rate); straight += v;
+      premTot[pr.id] = premTot[pr.id] || {h: 0, v: 0}; premTot[pr.id].h += ph; premTot[pr.id].v += v;
+    }
+    const o = Math.max(0, h - cap); reg += h - o; ot += o;
+    if (o && h) otPrem += o * (straight / h) * (mult - 1);   // the extra half is figured on her average rate that week, premiums included
+  });
   if (reg) lines.push({l: `Regular · ${hrs(reg)} × ${fmt(rate)}`, v: reg * rate});
-  if (ot) lines.push({l: `Overtime · ${hrs(ot)} × ${fmt(rate * mult)}`, v: ot * rate * mult});
-  if (dt) lines.push({l: `Double time · ${hrs(dt)} × ${fmt(rate * 2)}`, v: dt * rate * 2});
-  if (hol) lines.push({l: `Holiday / PTO · ${hrs(hol)} × ${fmt(rate)}`, v: hol * rate});
-  if (extra) lines.push({l: 'Bonus / other pay', v: extra});
+  if (ot) { lines.push({l: `Overtime · ${hrs(ot)} × ${fmt(rate)}`, v: ot * rate}); lines.push({l: `Overtime premium (the extra half)`, v: otPrem}); }
+  for (const pr of p.prem) if (premTot[pr.id]) lines.push({l: `${pr.name} · ${hrs(premTot[pr.id].h)} × ${fmt(num(pr.rate))}`, v: premTot[pr.id].v});
+  let paidH = 0;
+  for (const t of p.paid) { const h = num((plan.paid || {})[t.id]); if (!h) continue; paidH += h; const r = num(t.rate) || rate; lines.push({l: `${t.name} · ${hrs(h)} × ${fmt(r)}`, v: h * r}); }
+  if (num(plan.bonus)) lines.push({l: plan.bonusName || 'Bonus / other pay', v: num(plan.bonus)});
   const gross = r2(lines.reduce((t, x) => t + x.v, 0));
-  return Object.assign({lines, gross, hours: r2(reg + ot + dt + hol), reg: r2(reg), ot: r2(ot)}, deductions(p, gross));
+  const cut = []; let preT = 0, ficaCut = 0, postT = 0;
+  for (const d of p.pre) { const v = r2(d.mode === 'pct' ? gross * numS(d.val) / 100 : numS(d.val)); if (!v || !gross) continue; cut.push({g: 'pre', l: d.name, v}); preT += v; if (d.fica) ficaCut += v; }
+  const ficaBase = Math.max(0, gross - ficaCut + (gross ? num(p.imputed) : 0));
+  const fedBase = Math.max(0, ficaBase - (preT - ficaCut));
+  const taxes = gross ? [['Social Security', ficaBase * .062], ['Medicare', ficaBase * .0145], ['Federal income tax', fedWithhold(fedBase, perYear(p), p.fed)], [p.state.name || 'State tax', fedBase * num(p.state.pct) / 100]] : [];
+  let taxT = 0;
+  for (const [l, v0] of taxes) { const v = r2(v0); if (v) { cut.push({g: 'tax', l, v}); taxT += v; } }
+  for (const d of p.post) { const v = r2(d.mode === 'pct' ? gross * numS(d.val) / 100 : numS(d.val)); if (!v || !gross) continue; cut.push({g: 'post', l: d.name, v}); postT += v; }
+  const net = gross ? r2(gross - preT - taxT - postT + numS(p.adj)) : 0;
+  return {lines, gross, cut, net, preT: r2(preT), taxT: r2(taxT), postT: r2(postT), hours: r2(worked + paidH), worked: r2(worked), ot: r2(ot)};
+}
+function breakdownHTML(c, p) {
+  if (!c.gross) return '';
+  const grp = (g, title) => { const xs = c.cut.filter(x => x.g === g); return xs.length ? `<div class="dsep">${title}</div>${xs.map(x => `<div class="brow"><span>${esc(x.l)}</span><b class="red">${MINUS}${fmt(x.v)}</b></div>`).join('')}` : ''; };
+  return `<div class="dsep">Your pay</div>${c.lines.map(x => `<div class="brow"><span>${esc(x.l)}</span><b>${fmt(x.v)}</b></div>`).join('')}
+    <div class="brow tot"><span>Gross pay</span><b>${fmt(c.gross)}</b></div>
+    ${grp('pre', 'Before taxes')}${grp('tax', 'Taxes')}${grp('post', 'After taxes')}
+    <div class="brow tot"><span>Total taken out</span><b class="red">${MINUS}${fmt(c.preT + c.taxT + c.postT)}</b></div>
+    ${numS(p.adj) ? `<div class="brow"><span>Fine-tune to match her stubs</span><b>${numS(p.adj) < 0 ? MINUS : '+'}${fmt(Math.abs(numS(p.adj)))}</b></div>` : ''}
+    <div class="brow net"><span>Take-home</span><b class="green">+${fmt(c.net)}</b></div>`;
+}
+const earnTile = () => S.tiles.find(x => x.id === 'earn' && x.kind === 'in') || S.tiles.find(x => x.kind === 'in');
+const realPaychecks = () => { const et = earnTile(); return et ? S.items.filter(i => i.tile === et.id && !i.pred && !i.rep && /paycheck/i.test(i.name || '')).sort((a, b) => b.date.localeCompare(a.date)) : []; };
+// Keep predicted paychecks in Earnings so upcoming months show what's coming in.
+function syncPredictions() {
+  const et = earnTile(); let changed = false;
+  for (const t of S.tiles) {
+    if (t.kind !== 'pay' || !t.pay || t.pay.v !== 2) continue;
+    const p = t.pay, pre = `pred:${t.id}:`, keep = new Set(), real = realPaychecks();
+    const realNear = d => real.some(i => Math.abs(dBetween(i.date, d)) <= 3);
+    if (et && p.showPred && num(p.rate) && p.start) {
+      for (const per of payPeriods(p, today(), 6)) {
+        const id = pre + per.payday;
+        if ((p.noPred || {})[per.payday] || realNear(per.payday)) continue;
+        keep.add(id);
+        const c = payFor(p, planFor(p, per));
+        const it = S.items.find(i => i.id === id);
+        if (it && !it.pred) continue;   // she already typed the real amount
+        const rec = {id, tile: et.id, name: 'Paycheck', amt: c.net, date: per.payday, rep: null, pred: true,
+          note: `${hrs(c.worked)} worked${c.ot ? `, ${hrs(c.ot)} overtime` : ''}`, done: {}, skip: {}};
+        if (!it) { S.items.push(rec); changed = true; }
+        else if (it.amt !== rec.amt || it.note !== rec.note || it.tile !== rec.tile) { Object.assign(it, rec); changed = true; }
+      }
+    }
+    // drop predictions that are switched off, replaced by a real deposit, re-planned away, or long past
+    const before = S.items.length;
+    S.items = S.items.filter(i => !(i.pred && i.id.startsWith(pre)) || (keep.has(i.id) || (i.date < today() && dBetween(i.date, today()) <= 10 && p.showPred && !realNear(i.date))));
+    if (S.items.length !== before) changed = true;
+  }
+  if (changed) save();
 }
 function payTileHTML(t) {
-  const p = t.pay || defPay(), c = p.rate ? payCalc(p, p.hours) : null;
-  const body = !p.rate ? `<div class="tt rg" style="font-size:17px">Work out my pay</div><div class="ts">Set your hourly rate to start</div>`
-    : c.gross ? `<div class="tt green">+${fmt(c.net)}</div><div class="ts">take-home for ${hrs(c.hours)}</div>`
-    : `<div class="tt rg" style="font-size:17px">Work out my pay</div><div class="ts">Type in your hours</div>`;
+  const p = t.pay && t.pay.v === 2 ? t.pay : null;
+  let body = `<div class="tt rg" style="font-size:17px">Work out my pay</div><div class="ts">Set your pay to start</div>`;
+  if (p && num(p.rate) && p.start) {
+    const per = payPeriods(p, today(), 1)[0], c = payFor(p, planFor(p, per));
+    body = `<div class="tt green">+${fmt(c.net)}</div><div class="ts">next paycheck · ${shortD(per.payday)}${c.ot ? ` · ${hrs(c.ot)} OT` : ''}</div>`;
+  }
   return `<button class="tile" data-t="${t.id}"><div class="ti">${cute(t.icon, 46)}</div><div class="tn">${esc(t.name)}</div>${body}</button>`;
 }
 function openPay(id) {
-  const t = tileOf(id); if (!t.pay) { t.pay = defPay(); save(); }
+  const t = tileOf(id); if (!t.pay || t.pay.v !== 2) { t.pay = defPay(); save(); }
   const el = sheet(t.name, '', {icon: t.icon, head: `<button class="ib" data-set aria-label="Pay settings">${ic('gear')}</button><button class="ib" data-more aria-label="Edit tile">${ic('more')}</button>`});
   el.querySelector('[data-set]').onclick = () => paySettings(id);
   el.querySelector('[data-more]').onclick = () => tileForm(tileOf(id));
   const draw = () => {
     const T = tileOf(id); if (!T) return;
-    const p = T.pay, h = p.hours, two = p.freq === '2week';
+    const p = T.pay;
     el.querySelector('h2').innerHTML = `<span class="mini">${cute(T.icon, 26)}</span><span>${esc(T.name)}</span>`;
-    if (!p.rate) {
-      el.querySelector('.sb').innerHTML = `<div class="empty"><div class="ei">${cute('calc', 84)}</div>Let's set up your pay first: your hourly rate and what comes out of your check.<br><button class="btn" data-go>${ic('gear')}Set up my pay</button></div>`;
+    if (!num(p.rate) || !p.start) {
+      el.querySelector('.sb').innerHTML = `<div class="empty"><div class="ei">${cute('calc', 84)}</div>Set up your pay once (hourly rate, when you get paid, and what comes out of your check) and this tile predicts every paycheck, overtime included.<br><button class="btn" data-go>${ic('gear')}Set up my pay</button></div>`;
       el.querySelector('[data-go]').onclick = () => paySettings(id);
       return;
     }
-    const inp = (k, label, ph) => `<div class="fld"><label>${label}</label><input data-h="${k}" inputmode="decimal" value="${esc(h[k])}" placeholder="${ph}" autocomplete="off"></div>`;
+    const pers = payPeriods(p, today(), 6), next = pers[0], nplan = planFor(p, next), nc = payFor(p, nplan);
+    // what one more hour is worth on the next check (last week of the period)
+    const bump = (dh, dw) => { const pl = JSON.parse(JSON.stringify(nplan)); const i = pl.w.length - 1; pl.w[i] = num(pl.w[i]) + dh; if (dw) { pl.prem = pl.prem || {}; const a = (pl.prem.wknd || Array(pl.w.length).fill(0)).slice(); a[i] = num(a[i]) + dw; pl.prem.wknd = a; } return payFor(p, pl).net - nc.net; };
+    const lastW = num(nplan.w[nplan.w.length - 1]), atOT = lastW >= (num(p.otAfter) || 40);
+    const hasW = p.prem.some(x => x.id === 'wknd' && num(x.rate));
+    const totals = pers.reduce((s, per) => s + payFor(p, planFor(p, per)).net, 0);
+    const stubs = (p.stubs || []).slice().sort((a, b) => b.check.localeCompare(a.check));
+    const real = realPaychecks().slice(0, 8);
     el.querySelector('.sb').innerHTML = `
-      <div class="big"><small>Take-home pay (estimate)</small><b class="green" id="pNet"></b><small id="pSub"></small></div>
-      <div class="list" style="padding:2px 16px 14px">
-        ${inp('w1', two ? 'Hours worked · week 1' : 'Hours worked this week', 'e.g. 40')}
-        ${two ? inp('w2', 'Hours worked · week 2', 'e.g. 44') : ''}
-        <div class="hint">Overtime is worked out for you: hours over ${num(p.otAfter) || 40} in a week are paid at ${num(p.otMult) || 1.5}×.</div>
-        <details class="more" ${h.hol || h.dt || h.extra ? 'open' : ''}><summary>Holiday, double time or a bonus</summary>
-          ${inp('hol', 'Holiday / PTO hours', '0')}${inp('dt', 'Double-time hours', '0')}${inp('extra', 'Bonus or other pay ($)', '0.00')}
-        </details>
+      <div class="big"><small>Next paycheck · ${dayH(next.payday)}</small><b class="green">+${fmt(nc.net)}</b>
+        <small>${shortD(next.start)} – ${shortD(next.end)} · ${hrs(nc.worked)} worked${nc.ot ? ` · ${hrs(nc.ot)} overtime` : ''}${nplan.usual ? ' · your usual week' : ''}</small>
+        <button class="btn" data-plan="${next.start}" style="margin-top:12px">${ic('cal')}Plan this paycheck</button></div>
+      <div class="list" style="padding:12px 16px">
+        <div style="font-weight:800">What's one more hour worth?</div>
+        <div class="brow" style="padding:8px 0 0;border:0"><span>${atOT ? 'Each extra overtime hour' : `Each extra hour (overtime starts after ${num(p.otAfter) || 40})`}</span><b class="green">+${fmt(bump(1))}</b></div>
+        ${hasW ? `<div class="brow" style="padding:6px 0 0;border:0"><span>…if it's a weekend hour</span><b class="green">+${fmt(bump(1, 1))}</b></div>` : ''}
+        <div class="brow" style="padding:6px 0 0;border:0"><span>A full extra 8-hour shift</span><b class="green">+${fmt(bump(8))}</b></div>
+        <div class="hint">Take-home, after taxes and deductions, on the ${shortD(next.payday)} check.</div>
       </div>
-      <div class="list" id="pBreak"></div>
-      <div class="form"><button class="btn" id="pAdd">${ic('add')}Add to Earnings</button><button class="btn soft" id="pSet">${ic('gear')}Pay rate & deductions</button></div>`;
-    const calc = () => {
-      const c = payCalc(p, h);
-      el.querySelector('#pNet').textContent = '+' + fmt(c.net);
-      el.querySelector('#pSub').textContent = c.gross ? `${hrs(c.hours)}${c.ot ? ` · ${hrs(c.ot)} overtime` : ''} · gross ${fmt(c.gross)}` : 'Type in your hours below';
-      el.querySelector('#pBreak').innerHTML = c.gross ? `<div class="dsep">Your pay</div>${c.lines.map(x => `<div class="brow"><span>${esc(x.l)}</span><b>${fmt(x.v)}</b></div>`).join('')}
-        <div class="brow tot"><span>Gross pay</span><b>${fmt(c.gross)}</b></div>
-        <div class="dsep">Comes out of your check</div>${c.cut.map(x => `<div class="brow"><span>${esc(x.l)}</span><b class="red">${x.v < 0 ? '+' : MINUS}${fmt(x.v)}</b></div>`).join('') || '<div class="brow"><span class="mut">Nothing set up yet</span></div>'}
-        <div class="brow tot"><span>Total taken out</span><b class="red">${MINUS}${fmt(c.total)}</b></div>
-        <div class="brow net"><span>Take-home</span><b class="green">+${fmt(c.net)}</b></div>` : '';
-      return c;
-    };
-    let tm;
-    el.querySelectorAll('[data-h]').forEach(i => i.oninput = () => { h[i.dataset.h] = i.value; calc(); clearTimeout(tm); tm = setTimeout(() => { save(); renderHome(); }, 400); });
-    calc();
-    el.querySelector('#pSet').onclick = () => paySettings(id);
-    el.querySelector('#pAdd').onclick = () => {
-      const c = calc(); if (!c.gross) { toast('Type in your hours first'); return; }
-      const et = S.tiles.find(x => x.id === 'earn' && x.kind === 'in') || S.tiles.find(x => x.kind === 'in');
-      if (!et) { toast('Add a "money coming in" tile first'); return; }
-      const pe = pop(`<h3>Add to ${esc(et.name)}</h3><div class="form"><div class="fld"><label>Payday</label><input type="date" id="pDay" value="${today()}"></div><div class="fld"><label>Name</label><input id="pName" value="Paycheck"></div><button class="btn" id="pOk">${ic('check')}Add +${fmt(c.net)}</button></div>`);
-      pe.querySelector('#pOk').onclick = () => {
-        const date = pe.querySelector('#pDay').value || today();
-        S.items.push({id: uid(), tile: et.id, name: pe.querySelector('#pName').value.trim() || 'Paycheck', amt: c.net, date, rep: null,
-          note: `${hrs(c.hours)}${c.ot ? `, ${hrs(c.ot)} OT` : ''} · from the pay calculator`, done: {}, skip: {}});
-        save(); closeTop(); refresh(); toast(`Added to ${et.name}`);
-      };
-    };
+      <div class="dayh"><span>Coming up</span><span class="mut" style="font-weight:700">≈ +${fmt(totals)} in ${pers.length} checks</span></div>
+      <div class="list">${pers.map(per => { const pl = planFor(p, per), c = payFor(p, pl), hol = holidaysIn(p, per);
+        return `<div class="row" data-plan="${per.start}"><div class="bub in">$</div><div class="mid"><div class="nm">${dayH(per.payday)}</div><div class="sub"><span>${shortD(per.start)}–${shortD(per.end)} · ${hrs(c.worked)}${c.ot ? `, ${hrs(c.ot)} OT` : ''}</span>${pl.usual ? '<span class="tag">usual week</span>' : '<span class="tag">planned</span>'}${hol.map(h => `<span class="tag">${esc(h.name)}</span>`).join('')}</div></div><div class="amt green">+${fmt(c.net)}</div></div>`; }).join('')}</div>
+      <div class="hint" style="margin:6px 16px 0">${p.showPred ? 'These also show in your Earnings tile as predicted paychecks.' : ''} Tap a paycheck to plan its hours.</div>
+      <div class="dayh"><span>Real pay stubs</span><button data-stub>${ic('add')}Add a stub</button></div>
+      <div class="list">${stubs.length ? stubs.map((s, k) => { const c = payFor(p, s), d = r2(num(s.net) - c.net);
+        return `<div class="row" data-stubi="${(p.stubs || []).indexOf(s)}"><div class="bub in">${ic('check')}</div><div class="mid"><div class="nm">${dayH(s.check)}</div><div class="sub"><span>Real ${fmt(s.net)} · calculator ${fmt(c.net)}</span>${s.note ? `<span>${esc(s.note)}</span>` : ''}</div></div><div class="amt ${Math.abs(d) <= 5 ? 'green' : 'red'}" style="font-size:13px">${Math.abs(d) <= 1 ? 'spot on' : (d > 0 ? 'off +' : 'off ' + MINUS) + fmt(Math.abs(d))}</div></div>`; }).join('')
+        : '<div class="empty" style="padding:16px">Add a real pay stub to check the calculator against it.</div>'}</div>
+      ${real.length ? `<div class="dayh"><span>Paychecks in your bank</span><span class="mut" style="font-weight:700">avg ${fmt(real.reduce((s, i) => s + i.amt, 0) / real.length)}</span></div>
+      <div class="list">${real.map(i => `<div class="brow"><span>${dayH(i.date)}</span><b class="green">+${fmt(i.amt)}</b></div>`).join('')}</div>` : ''}
+      <div class="form"><button class="btn soft" data-set2>${ic('gear')}Pay rate, taxes & deductions</button></div>`;
+    el.querySelectorAll('[data-plan]').forEach(b => b.onclick = () => planPeriod(id, b.dataset.plan));
+    el.querySelector('[data-stub]').onclick = () => stubForm(id);
+    el.querySelectorAll('[data-stubi]').forEach(b => b.onclick = () => stubForm(id, +b.dataset.stubi));
+    el.querySelector('[data-set2]').onclick = () => paySettings(id);
   };
   el._draw = draw; draw();
   return el;
 }
-const WHEN = {pre: 'Before taxes', tax: 'Tax', post: 'After taxes'};
+// Hours inputs for one period (shared by the planner and the stub form).
+function hoursHTML(p, pl, per) {
+  const w = weeksIn(p), shown = p.prem.filter(x => num(x.rate));
+  let h = '';
+  for (let i = 0; i < w; i++) {
+    const ws = addDays(per.start, 7 * i);
+    h += `<div class="list" style="padding:4px 14px 12px;margin-left:0;margin-right:0">
+      <div class="fld"><label>${w > 1 ? `Week ${i + 1} · ` : ''}${shortD(ws)} – ${shortD(addDays(ws, 6))} · hours worked</label><input data-w="${i}" inputmode="decimal" value="${esc(pl.w[i] ?? '')}" placeholder="0">
+        <div class="chips" style="margin-top:8px">${[36, 40, 44, 48, 52].map(n => `<button data-q="${i}" data-n="${n}">${n}</button>`).join('')}</div></div>
+      ${(() => { const box = pr => `<div class="fld"><label>…of those, ${esc(pr.name.replace(/ premium$/i, '').toLowerCase())} hours</label><input data-pr="${pr.id}" data-i="${i}" inputmode="decimal" value="${esc(((pl.prem || {})[pr.id] || [])[i] ?? '')}" placeholder="0"></div>`;
+        const main = shown.slice(0, 1), rest = shown.slice(1), restOn = rest.some(pr => num(((pl.prem || {})[pr.id] || [])[i]));
+        return main.map(box).join('') + (rest.length ? `<details class="more" ${restOn ? 'open' : ''}><summary>More premiums (${rest.map(pr => esc(pr.name.replace(/ premium$/i, ''))).join(', ')})</summary>${rest.map(box).join('')}</details>` : ''); })()}
+    </div>`;
+  }
+  h += `<div class="list" style="padding:4px 14px 12px;margin-left:0;margin-right:0"><div style="font-weight:800;margin-top:10px">Also paid this period</div>
+    ${p.paid.map(t => `<div class="fld"><label>${esc(t.name)} hours${num(t.rate) ? ` (${fmt(num(t.rate))}/hr)` : ''}</label><input data-pd="${t.id}" inputmode="decimal" value="${esc((pl.paid || {})[t.id] ?? '')}" placeholder="0"></div>`).join('')}
+    <div class="fld"><label>Bonus or other pay ($)</label><input data-bonus inputmode="decimal" value="${esc(pl.bonus || '')}" placeholder="0.00"></div></div>`;
+  return h;
+}
+function readHours(el, p) {
+  const w = weeksIn(p), pl = {w: [], prem: {}, paid: {}, bonus: 0};
+  for (let i = 0; i < w; i++) pl.w[i] = num(el.querySelector(`[data-w="${i}"]`).value);
+  el.querySelectorAll('[data-pr]').forEach(x => { (pl.prem[x.dataset.pr] = pl.prem[x.dataset.pr] || Array(w).fill(0))[+x.dataset.i] = num(x.value); });
+  el.querySelectorAll('[data-pd]').forEach(x => { if (num(x.value)) pl.paid[x.dataset.pd] = num(x.value); });
+  pl.bonus = num(el.querySelector('[data-bonus]').value);
+  return pl;
+}
+function wireQuick(el, onChange) {
+  el.querySelectorAll('[data-q]').forEach(b => b.onclick = () => { el.querySelector(`[data-w="${b.dataset.q}"]`).value = b.dataset.n; onChange(); });
+  el.querySelectorAll('input').forEach(i => i.addEventListener('input', onChange));
+}
+function planPeriod(id, start) {
+  const p = tileOf(id).pay, per = payPeriods(p, addDays(start, 0), 12).find(x => x.start === start) || {start, end: addDays(start, (num(p.every) || 14) - 1), payday: addDays(start, (num(p.every) || 14) - 1 + num(p.lag))};
+  const pl = JSON.parse(JSON.stringify(planFor(p, per))), hol = holidaysIn(p, per);
+  const el = sheet(`Paycheck · ${shortD(per.payday)}`, `<div class="form">
+    <div class="hint" style="margin-top:10px">Pay period ${nice(per.start)} – ${nice(per.end)}. Money lands ${dayH(per.payday)}.${hol.length ? ` Includes ${hol.map(h => esc(h.name)).join(', ')}.` : ''}</div>
+    <div class="big" style="margin:12px 0 0"><small>Take-home</small><b class="green" id="ppNet"></b><small id="ppSub"></small></div>
+    ${hoursHTML(p, pl, per)}
+    <div class="list" id="ppBreak" style="margin-left:0;margin-right:0"></div>
+    <button class="btn" id="ppSave">${ic('check')}Save this plan</button>
+    ${p.plans[start] ? `<button class="btn soft" id="ppReset">${ic('restore')}Go back to my usual week</button>` : ''}
+  </div>`, {icon: 'calc'});
+  const calc = () => { const c = payFor(p, readHours(el, p)); el.querySelector('#ppNet').textContent = '+' + fmt(c.net); el.querySelector('#ppSub').textContent = `${hrs(c.worked)} worked${c.ot ? ` · ${hrs(c.ot)} overtime` : ''} · gross ${fmt(c.gross)}`; el.querySelector('#ppBreak').innerHTML = breakdownHTML(c, p); };
+  wireQuick(el, calc); calc();
+  el.querySelector('#ppSave').onclick = () => { p.plans[start] = readHours(el, p); save(); syncPredictions(); closeTop(); refresh(); toast('Plan saved'); };
+  if (el.querySelector('#ppReset')) el.querySelector('#ppReset').onclick = () => { delete p.plans[start]; save(); syncPredictions(); closeTop(); refresh(); toast('Back to your usual week'); };
+}
+function stubForm(id, idx) {
+  const p = tileOf(id).pay, isNew = idx == null, s0 = isNew ? null : p.stubs[idx];
+  const last = payPeriods(p, addDays(today(), -14), 1)[0] || {start: today(), end: today(), payday: today()};
+  const per = s0 ? {start: s0.start, end: addDays(s0.start, (num(p.every) || 14) - 1), payday: s0.check} : last;
+  const pl = s0 ? JSON.parse(JSON.stringify(s0)) : {w: Array(weeksIn(p)).fill(''), prem: {}, paid: {}, bonus: 0};
+  const el = sheet(isNew ? 'Add a pay stub' : 'Pay stub', `<div class="form">
+    <div class="hint" style="margin-top:10px">Type in the numbers from a real stub. The calculator checks itself against it, so you can see how close its predictions are.</div>
+    <div style="display:flex;gap:10px"><div class="fld" style="flex:1"><label>Check date</label><input type="date" id="sbCheck" value="${s0 ? s0.check : per.payday}"></div><div class="fld" style="flex:1"><label>Period began</label><input type="date" id="sbStart" value="${per.start}"></div></div>
+    ${hoursHTML(p, pl, per)}
+    <div style="display:flex;gap:10px"><div class="fld" style="flex:1"><label>Gross pay</label><input id="sbGross" inputmode="decimal" value="${s0 ? s0.gross : ''}" placeholder="0.00"></div><div class="fld" style="flex:1"><label>Net pay</label><input id="sbNet" inputmode="decimal" value="${s0 ? s0.net : ''}" placeholder="0.00"></div></div>
+    <div class="summary" id="sbCmp"></div>
+    <button class="btn" id="sbSave">${ic('check')}Save stub</button>
+    <button class="btn soft" id="sbTune">${ic('tune' in P ? 'tune' : 'check')}Fine-tune predictions to my stubs</button>
+    ${!isNew ? `<button class="btn ghost" id="sbDel">${ic('del')}Delete stub</button>` : ''}
+  </div>`, {icon: 'calc'});
+  const read = () => Object.assign(readHours(el, p), {check: el.querySelector('#sbCheck').value, start: el.querySelector('#sbStart').value, gross: num(el.querySelector('#sbGross').value), net: num(el.querySelector('#sbNet').value), note: s0 ? s0.note || '' : ''});
+  const cmp = () => {
+    const s = read(), c = payFor(p, s);
+    if (!s.net) { el.querySelector('#sbCmp').textContent = 'Fill in the hours, gross and net to compare.'; return; }
+    const dg = r2(s.gross - c.gross), dn = r2(s.net - c.net);
+    el.querySelector('#sbCmp').innerHTML = `Calculator: gross ${fmt(c.gross)}, take-home ${fmt(c.net)}. Stub: ${fmt(s.gross)} / ${fmt(s.net)}.<br>` +
+      (Math.abs(dn) <= 1 ? 'Spot on.' : Math.abs(dg) > 2 ? `Gross pay is off by ${fmt(Math.abs(dg))}: check the hours, a premium, or whether your rate changed.` : `Gross matches; take-home is off by ${fmt(Math.abs(dn))}, so a deduction or tax may have changed.`);
+  };
+  wireQuick(el, cmp); cmp();
+  el.querySelector('#sbSave').onclick = () => { const s = read(); if (!s.check || !s.net) { toast('Add the check date and net pay'); return; } p.stubs = p.stubs || []; if (isNew) p.stubs.push(s); else p.stubs[idx] = s; save(); syncPredictions(); closeTop(); refresh(); toast('Stub saved'); };
+  el.querySelector('#sbTune').onclick = () => {
+    const ss = (p.stubs || []).filter(s => !s.skipTune); if (!ss.length) { toast('Save a stub first'); return; }
+    const base = Object.assign({}, p, {adj: 0});
+    const avg = ss.reduce((t, s) => t + (num(s.net) - payFor(base, s).net), 0) / ss.length;
+    p.adj = r2(avg); save(); syncPredictions(); refresh(); cmp(); toast(Math.abs(p.adj) < 0.01 ? 'Already matches your stubs' : `Predictions now adjusted by ${p.adj < 0 ? MINUS : '+'}${fmt(Math.abs(p.adj))}`);
+  };
+  if (el.querySelector('#sbDel')) el.querySelector('#sbDel').onclick = async () => { if (!await ask('Delete this stub?', dayH(s0.check), 'Delete', true)) return; p.stubs.splice(idx, 1); save(); closeTop(); refresh(); };
+}
+// Editable rows for premiums / paid types / deductions.
+function rowsHTML(kind, rows) {
+  const cols = {
+    prem: d => `<input class="dv" data-k="rate" inputmode="decimal" value="${d.rate || ''}" placeholder="$ per hour">`,
+    paid: d => `<input class="dv" data-k="rate" inputmode="decimal" value="${d.rate || ''}" placeholder="$ per hour (leave empty = your normal rate)" style="flex:1 1 auto">`,
+    pre: d => `<input class="dv" data-k="val" inputmode="decimal" value="${d.val || ''}" placeholder="0"><select data-k="mode"><option value="pct" ${d.mode === 'pct' ? 'selected' : ''}>% of pay</option><option value="amt" ${d.mode !== 'pct' ? 'selected' : ''}>$ each check</option></select>`,
+    post: d => `<input class="dv" data-k="val" inputmode="decimal" value="${d.val || ''}" placeholder="0"><select data-k="mode"><option value="pct" ${d.mode === 'pct' ? 'selected' : ''}>% of pay</option><option value="amt" ${d.mode !== 'pct' ? 'selected' : ''}>$ each check</option></select>`
+  }[kind];
+  return rows.map(d => `<div class="ded" data-row="${esc(d.id)}"><div class="dtop"><input class="dn" value="${esc(d.name)}" placeholder="Name"><button class="ib dx" aria-label="Remove">${ic('del')}</button></div><div class="dbot">${cols(d)}</div>
+    ${kind === 'paid' ? `<label class="inl" style="margin-top:6px;font-size:13px;font-weight:600"><input type="checkbox" data-k="rr" ${d.rr ? 'checked' : ''} style="width:18px;height:18px;accent-color:var(--rg)">Counts toward the overtime rate (like on-call pay)</label>` : ''}
+    ${kind === 'pre' ? `<label class="inl" style="margin-top:6px;font-size:13px;font-weight:600"><input type="checkbox" data-k="fica" ${d.fica ? 'checked' : ''} style="width:18px;height:18px;accent-color:var(--rg)">Also lowers Social Security &amp; Medicare (health, dental, vision)</label>` : ''}</div>`).join('');
+}
+function readRows(box, kind) {
+  return [...box.querySelectorAll('.ded')].map(r => {
+    const o = {id: r.dataset.row, name: r.querySelector('.dn').value.trim() || 'Item'};
+    r.querySelectorAll('[data-k]').forEach(x => { o[x.dataset.k] = x.type === 'checkbox' ? x.checked : x.tagName === 'SELECT' ? x.value : numS(x.value); });
+    return o;
+  });
+}
 function paySettings(id) {
-  const t = tileOf(id), p = JSON.parse(JSON.stringify(t.pay || defPay()));
-  const dedRow = d => `<div class="ded" data-d="${esc(d.id)}">
-      <div class="dtop"><input class="dn" value="${esc(d.name)}" placeholder="What is it?"><button class="ib dx" aria-label="Remove">${ic('del')}</button></div>
-      <div class="dbot"><input class="dv" inputmode="decimal" value="${d.val === 0 ? '' : esc(d.val)}" placeholder="0">
-        <select class="dm"><option value="pct" ${d.mode === 'pct' ? 'selected' : ''}>% of pay</option><option value="amt" ${d.mode === 'amt' ? 'selected' : ''}>$ each check</option></select>
-        <select class="dw">${Object.entries(WHEN).map(([k, v]) => `<option value="${k}" ${d.when === k ? 'selected' : ''}>${v}</option>`).join('')}</select></div></div>`;
+  const t = tileOf(id), p = JSON.parse(JSON.stringify(t.pay && t.pay.v === 2 ? t.pay : defPay()));
+  const lastPer = p.start ? payPeriods(p, addDays(today(), -((num(p.every) || 14) + 10)), 1)[0] : null;
+  const sec = (title, inner) => `<div class="card2"><b>${title}</b>${inner}</div>`;
   const el = sheet('Pay settings', `<div class="form">
-    <div class="fld"><label>Hourly pay rate</label><input id="sRate" inputmode="decimal" value="${p.rate || ''}" placeholder="e.g. 22.50"></div>
-    <div class="fld"><label>How often are you paid?</label><div class="chips" id="sFreq"><button data-f="week">Every week</button><button data-f="2week">Every 2 weeks</button></div></div>
-    <div style="display:flex;gap:10px"><div class="fld" style="flex:1"><label>Overtime after</label><div class="inl" style="margin:0"><input id="sOtA" inputmode="decimal" value="${p.otAfter}" style="max-width:none"><span>hrs/wk</span></div></div>
-    <div class="fld" style="flex:1"><label>Overtime pays</label><div class="inl" style="margin:0"><input id="sOtM" inputmode="decimal" value="${p.otMult}" style="max-width:none"><span>× rate</span></div></div></div>
-    <div class="fld"><label>What comes out of your check</label><div id="sDed">${p.ded.map(dedRow).join('')}</div>
-      <button class="btn soft" id="sAddDed" style="margin-top:8px">${ic('add')}Add something that comes out</button>
-      <div class="hint">Copy these from a pay stub if you can. A tax as a %: the tax amount ÷ gross pay × 100. Federal and state start as rough guesses.</div></div>
-    <div class="card2"><b>Make it match a pay stub</b><div class="hint" style="margin-top:2px">Type in one real check and the calculator adjusts itself to match it.</div>
-      <div class="inl"><input id="sStubG" inputmode="decimal" placeholder="Gross pay" style="max-width:none;flex:1"><input id="sStubN" inputmode="decimal" placeholder="Take-home" style="max-width:none;flex:1"></div>
-      <button class="btn soft" id="sMatch">${ic('check')}Match it</button></div>
+    ${sec('Pay', `
+      <div class="fld"><label>Hourly rate</label><input id="sRate" inputmode="decimal" value="${p.rate || ''}" placeholder="e.g. 28.86"></div>
+      <div style="display:flex;gap:10px"><div class="fld" style="flex:1"><label>Overtime after</label><div class="inl" style="margin:0"><input id="sOtA" inputmode="decimal" value="${p.otAfter}" style="max-width:none"><span>hrs/wk</span></div></div>
+      <div class="fld" style="flex:1"><label>Overtime pays</label><div class="inl" style="margin:0"><input id="sOtM" inputmode="decimal" value="${p.otMult}" style="max-width:none"><span>× rate</span></div></div></div>
+      <div class="fld"><label>Extra $ per hour for some hours (premiums)</label><div id="sPrem">${rowsHTML('prem', p.prem)}</div><button class="btn soft" data-add="prem" style="margin-top:4px">${ic('add')}Add a premium</button></div>
+      <div class="fld"><label>Paid hours that aren't work (don't count toward overtime)</label><div id="sPaid">${rowsHTML('paid', p.paid)}</div><button class="btn soft" data-add="paid" style="margin-top:4px">${ic('add')}Add one</button></div>`)}
+    ${sec('When you get paid', `
+      <div class="fld"><label>How often</label><div class="chips" id="sEvery"><button data-e="7">Every week</button><button data-e="14">Every 2 weeks</button></div></div>
+      <div style="display:flex;gap:10px"><div class="fld" style="flex:1"><label>A pay period began</label><input type="date" id="sStart" value="${lastPer ? lastPer.start : ''}"></div>
+      <div class="fld" style="flex:1"><label>Its money landed</label><input type="date" id="sPayday" value="${lastPer ? lastPer.payday : ''}"></div></div>
+      <div class="hint">Copy both from any pay stub: the "Pay Period Begin" date, and the day the deposit showed up in the bank.</div>
+      <div style="display:flex;gap:10px"><div class="fld" style="flex:1"><label>Usual hours a week</label><input id="sUsual" inputmode="decimal" value="${p.usual.h || ''}" placeholder="40"></div>
+      <div class="fld" style="flex:1"><label>…on weekends</label><input id="sUsualW" inputmode="decimal" value="${(p.usual.prem || {}).wknd || ''}" placeholder="0"></div></div>
+      <div class="hint">Paychecks you haven't planned use your usual week.</div>
+      <label class="setrow" style="padding:10px 0"><span style="flex:1">Show predicted paychecks in Earnings</span><input type="checkbox" id="sPred" ${p.showPred ? 'checked' : ''} style="width:22px;height:22px;accent-color:var(--rg)"></label>`)}
+    ${sec('Taken out before taxes', `<div id="sPre">${rowsHTML('pre', p.pre)}</div><button class="btn soft" data-add="pre" style="margin-top:4px">${ic('add')}Add one</button>
+      <div class="fld"><label>Taxable benefits added to pay (e.g. group term life)</label><input id="sImp" inputmode="decimal" value="${p.imputed || ''}" placeholder="0.00"></div>`)}
+    ${sec('Taxes', `
+      <div class="hint">Social Security (6.2%) and Medicare (1.45%) are worked out for you. Federal tax uses the 2026 IRS tables and the W-4 on your stub.</div>
+      <div class="fld"><label>W-4 filing status</label><select id="sStat"><option value="single">Single or married filing separately</option><option value="mfj">Married filing jointly</option><option value="hoh">Head of household</option></select></div>
+      <label class="inl" style="font-weight:700"><input type="checkbox" id="sStep2" ${p.fed.step2 ? 'checked' : ''} style="width:20px;height:20px;accent-color:var(--rg)">W-4 step 2 box checked (two jobs)</label>
+      <div style="display:flex;gap:10px"><div class="fld" style="flex:1"><label>Dependents amount</label><input id="sDeps" inputmode="decimal" value="${p.fed.deps || ''}" placeholder="0"></div>
+      <div class="fld" style="flex:1"><label>Extra withholding</label><input id="sExtra" inputmode="decimal" value="${p.fed.extra || ''}" placeholder="0"></div></div>
+      <div style="display:flex;gap:10px"><div class="fld" style="flex:1.4"><label>State tax name</label><input id="sStN" value="${esc(p.state.name)}"></div>
+      <div class="fld" style="flex:1"><label>State %</label><input id="sStP" inputmode="decimal" value="${p.state.pct || ''}" placeholder="0"></div></div>`)}
+    ${sec('Taken out after taxes', `<div id="sPost">${rowsHTML('post', p.post)}</div><button class="btn soft" data-add="post" style="margin-top:4px">${ic('add')}Add one</button>`)}
     <button class="btn" id="sSave">${ic('check')}Save</button>
   </div>`, {icon: 'calc'});
   const q = s => el.querySelector(s);
-  const syncF = () => q('#sFreq').querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.f === p.freq));
-  q('#sFreq').onclick = e => { const b = e.target.closest('button'); if (b) { p.freq = b.dataset.f; syncF(); } }; syncF();
-  const wire = () => q('#sDed').querySelectorAll('.dx').forEach(b => b.onclick = () => b.closest('.ded').remove());
-  wire();
-  q('#sAddDed').onclick = () => { q('#sDed').insertAdjacentHTML('beforeend', dedRow({id: uid(), name: '', mode: 'amt', val: 0, when: 'post'})); wire(); q('#sDed').lastElementChild.querySelector('.dn').focus(); };
-  const collect = () => {
-    p.rate = num(q('#sRate').value); p.otAfter = num(q('#sOtA').value) || 40; p.otMult = num(q('#sOtM').value) || 1.5;
-    p.ded = [...q('#sDed').querySelectorAll('.ded')].map(r => ({id: r.dataset.d, name: r.querySelector('.dn').value.trim() || 'Deduction', val: numS(r.querySelector('.dv').value), mode: r.querySelector('.dm').value, when: r.querySelector('.dw').value}));
-  };
-  q('#sMatch').onclick = () => {
-    collect();
-    const G = num(q('#sStubG').value), N = num(q('#sStubN').value);
-    if (!(G > 0) || !(N > 0) || N > G) { toast('Type in the gross and take-home from one pay stub'); return; }
-    const diff = deductions(p, G).net - N;   // what the calculator still misses for this check
-    if (Math.abs(diff) < 0.01) { toast('It already matches'); return; }
-    let adj = p.ded.find(d => d.id === 'adj');
-    if (!adj) { adj = {id: 'adj', name: 'Other (to match pay stub)', mode: 'pct', val: 0, when: 'post'}; p.ded.push(adj); }
-    adj.val = Math.round((numS(adj.val) + diff / G * 100) * 1000) / 1000;
-    q('#sDed').innerHTML = p.ded.map(dedRow).join(''); wire();
-    toast(`Adjusted: that check now comes out to ${fmt(deductions(p, G).net)}`);
-  };
+  q('#sStat').value = p.fed.status || 'single';
+  const syncE = () => q('#sEvery').querySelectorAll('button').forEach(b => b.classList.toggle('on', +b.dataset.e === (num(p.every) || 14)));
+  q('#sEvery').onclick = e => { const b = e.target.closest('button'); if (b) { p.every = +b.dataset.e; syncE(); } }; syncE();
+  const boxes = {prem: '#sPrem', paid: '#sPaid', pre: '#sPre', post: '#sPost'};
+  const wireDel = () => el.querySelectorAll('.dx').forEach(b => b.onclick = () => b.closest('.ded').remove());
+  wireDel();
+  el.querySelectorAll('[data-add]').forEach(b => b.onclick = () => {
+    const k = b.dataset.add, blank = {id: uid(), name: '', rate: 0, val: 0, mode: 'amt', fica: false};
+    q(boxes[k]).insertAdjacentHTML('beforeend', rowsHTML(k, [blank])); wireDel(); q(boxes[k]).lastElementChild.querySelector('.dn').focus();
+  });
   q('#sSave').onclick = () => {
-    collect();
+    p.rate = num(q('#sRate').value); p.otAfter = num(q('#sOtA').value) || 40; p.otMult = num(q('#sOtM').value) || 1.5;
+    for (const k of Object.keys(boxes)) p[k] = readRows(q(boxes[k]), k);
+    const st = q('#sStart').value, pdy = q('#sPayday').value;
+    if (st) { p.start = st; p.lag = pdy ? Math.max(0, dBetween(addDays(st, (num(p.every) || 14) - 1), pdy)) : num(p.lag); }
+    p.usual = {h: num(q('#sUsual').value), prem: Object.assign({}, p.usual.prem, {wknd: num(q('#sUsualW').value)})};
+    p.showPred = q('#sPred').checked; p.imputed = num(q('#sImp').value);
+    p.fed = {status: q('#sStat').value, step2: q('#sStep2').checked, deps: num(q('#sDeps').value), extra: num(q('#sExtra').value)};
+    p.state = {name: q('#sStN').value.trim() || 'State tax', pct: num(q('#sStP').value)};
     if (!(p.rate > 0)) { toast('Type in your hourly rate'); q('#sRate').focus(); return; }
-    p.hours = (tileOf(id).pay || {}).hours || p.hours;
-    tileOf(id).pay = p; save(); closeTop(); refresh(); toast('Pay settings saved');
+    if (!p.start) { toast('Add the date a pay period began'); q('#sStart').focus(); return; }
+    tileOf(id).pay = p; save(); syncPredictions(); closeTop(); refresh(); toast('Pay settings saved');
   };
 }
 
@@ -880,7 +1075,7 @@ function restore() {
       }
       // merge: add tiles it doesn't have yet, and entries it doesn't have yet (same file twice adds nothing)
       let nt = 0, ni = 0; const have = new Set(S.items.map(i => i.id));
-      for (const t of d.tiles) if (!tileOf(t.id)) { S.tiles.push(t); nt++; }
+      for (const t of d.tiles) { const cur = tileOf(t.id); if (!cur) { S.tiles.push(t); nt++; } else if (t.kind === 'pay' && t.pay && t.pay.v === 2 && cur.kind === 'pay' && !(cur.pay && cur.pay.v === 2 && num(cur.pay.rate))) { cur.pay = t.pay; nt++; } }
       for (const it of d.items) if (!have.has(it.id)) { S.items.push(it); ni++; }
       save(); closeAll(); refresh(); toast(`Added ${ni} entr${ni === 1 ? 'y' : 'ies'}${nt ? ` and ${nt} tile${nt > 1 ? 's' : ''}` : ''}`);
     };
@@ -925,7 +1120,7 @@ function boot() {
   $('#mPrev').onclick = () => { curM = mShift(curM, -1); refresh(); };
   $('#mNext').onclick = () => { curM = mShift(curM, 1); refresh(); };
   $('#mLbl').onclick = () => { curM = today().slice(0, 7); refresh(); };
-  load(); renderHome();
+  load(); syncPredictions(); renderHome();
   if (S.autoUpd && Date.now() - (S.updLast || 0) > 6 * 36e5) setTimeout(() => checkUpdate(false), 2500);
   setTimeout(() => { const s = $('#splash'); if (!s) return; s.style.opacity = 0; setTimeout(() => s.remove(), 400); }, 900);
 }
