@@ -1,4 +1,4 @@
-# iSaveMoney (Android)
+# Money Tiles (Android)
 
 Offline budget app in a rose-gold tile layout: Earnings (green +), Transactions (red −), a Budget
 checklist to tick off, plus any extra tiles. Repeats (weekly/2-weekly/monthly/yearly, forever, N times or until a date), a calendar per tile, CSV export and JSON backup/restore.
