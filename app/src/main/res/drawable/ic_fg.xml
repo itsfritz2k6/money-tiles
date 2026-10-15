@@ -1,19 +1,16 @@
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
-    <!-- the cute piggy bank from the app, scaled into the adaptive-icon safe zone -->
-    <group android:translateX="24" android:translateY="24" android:scaleX="1.25" android:scaleY="1.25">
-        <path android:strokeColor="#E48A9B" android:strokeWidth="2" android:strokeLineCap="round" android:pathData="M9,28c-3.5,-0.5 -4.5,-3.5 -2.5,-5"/>
-        <path android:fillColor="#F2A9B6" android:pathData="M15.6,35h0.3a2.6,2.6 0 0 1 2.6,2.6v3.8a2.6,2.6 0 0 1 -2.6,2.6h-0.3a2.6,2.6 0 0 1 -2.6,-2.6v-3.8a2.6,2.6 0 0 1 2.6,-2.6z"/>
-        <path android:fillColor="#F2A9B6" android:pathData="M30.6,35h0.3a2.6,2.6 0 0 1 2.6,2.6v3.8a2.6,2.6 0 0 1 -2.6,2.6h-0.3a2.6,2.6 0 0 1 -2.6,-2.6v-3.8a2.6,2.6 0 0 1 2.6,-2.6z"/>
-        <path android:fillColor="#EE97A7" android:pathData="M14,22l-2.4,-8.4 8.6,4.4z"/>
-        <path android:fillColor="#F7B8C3" android:pathData="M8,29a16,12.5 0 1 0 32,0a16,12.5 0 1 0 -32,0z"/>
-        <path android:fillColor="#EE97A7" android:pathData="M35,29.5a4.5,4 0 1 0 9,0a4.5,4 0 1 0 -9,0z"/>
-        <path android:fillColor="#B5566A" android:pathData="M37.4,29.5a0.9,0.9 0 1 0 1.8,0a0.9,0.9 0 1 0 -1.8,0zM40,29.5a0.9,0.9 0 1 0 1.8,0a0.9,0.9 0 1 0 -1.8,0z"/>
-        <path android:fillColor="#4A3036" android:pathData="M29.2,25a1.8,1.8 0 1 0 3.6,0a1.8,1.8 0 1 0 -3.6,0z"/>
-        <path android:fillColor="#F28FA2" android:fillAlpha="0.6" android:pathData="M30.2,31a2.3,2.3 0 1 0 4.6,0a2.3,2.3 0 1 0 -4.6,0z"/>
-        <path android:fillColor="#D9798C" android:pathData="M20.15,18h6.7a1.15,1.15 0 0 1 0,2.3h-6.7a1.15,1.15 0 0 1 0,-2.3z"/>
-        <path android:fillColor="#FFFFFF" android:fillAlpha="0.5" android:pathData="M12.5,25a4,2.2 0 1 0 8,0a4,2.2 0 1 0 -8,0z"/>
-        <path android:fillColor="#F4C56E" android:strokeColor="#DDA247" android:strokeWidth="1.5" android:pathData="M17.9,9a5.6,5.6 0 1 0 11.2,0a5.6,5.6 0 1 0 -11.2,0z"/>
-        <path android:strokeColor="#DDA247" android:strokeWidth="1.6" android:strokeLineCap="round" android:pathData="M21.6,9h3.8"/>
+    <!-- Money Tiles logo (same art as LOGO in index.html), scaled into the adaptive-icon safe zone -->
+    <group android:translateX="21.6" android:translateY="21.6" android:scaleX="1.35" android:scaleY="1.35">
+        <path android:fillColor="#FFFFFF" android:pathData="M9,4h9a5,5 0 0 1 5,5v9a5,5 0 0 1 -5,5h-9a5,5 0 0 1 -5,-5v-9a5,5 0 0 1 5,-5z"/>
+        <path android:fillColor="#C98A88" android:pathData="M30,4h9a5,5 0 0 1 5,5v9a5,5 0 0 1 -5,5h-9a5,5 0 0 1 -5,-5v-9a5,5 0 0 1 5,-5z"/>
+        <path android:fillColor="#E2A9A0" android:pathData="M9,25h9a5,5 0 0 1 5,5v9a5,5 0 0 1 -5,5h-9a5,5 0 0 1 -5,-5v-9a5,5 0 0 1 5,-5z"/>
+        <path android:fillColor="#F6C7C3" android:pathData="M30,25h9a5,5 0 0 1 5,5v9a5,5 0 0 1 -5,5h-9a5,5 0 0 1 -5,-5v-9a5,5 0 0 1 5,-5z"/>
+        <path android:fillColor="#2E9D5B" android:pathData="M12,8.5h3v3.5h3.5v3h-3.5v3.5h-3v-3.5h-3.5v-3h3.5z"/>
+        <path android:fillColor="#F4C56E" android:strokeColor="#FFF1D2" android:strokeWidth="1.2" android:pathData="M29,13.5a5.5,5.5 0 1 0 11,0a5.5,5.5 0 1 0 -11,0z"/>
+        <path android:strokeColor="#DDA247" android:strokeWidth="1.3" android:pathData="M30.9,13.5a3.6,3.6 0 1 0 7.2,0a3.6,3.6 0 1 0 -7.2,0z"/>
+        <path android:strokeColor="#FFFFFF" android:strokeWidth="1.1" android:strokeLineCap="round" android:pathData="M32.2,11.6a2.4,2.4 0 0 1 2.3,-1"/>
+        <path android:strokeColor="#FFFFFF" android:strokeWidth="2.8" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M8.8,34.6l3.2,3.2l6.2,-6.4"/>
+        <path android:fillColor="#E25C70" android:pathData="M34.5,40c-6.5,-4.3 -6.9,-9 -3.3,-9.4c1.6,-0.2 2.8,0.8 3.3,1.9c0.5,-1.1 1.7,-2.1 3.3,-1.9c3.6,0.4 3.2,5.1 -3.3,9.4z"/>
     </group>
 </vector>
