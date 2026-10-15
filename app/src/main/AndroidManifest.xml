@@ -4,7 +4,7 @@
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher"
-        android:label="iSaveMoney"
+        android:label="Money Tiles"
         android:theme="@style/AppTheme">
         <activity
             android:name=".MainActivity"
