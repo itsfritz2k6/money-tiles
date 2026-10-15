@@ -175,6 +175,20 @@ svg{display:block}
 .setrow{display:flex;align-items:center;gap:14px;padding:15px 16px;border-top:1px solid var(--line);font-weight:700;width:100%;text-align:left}
 .setrow:first-child{border-top:0}
 .setrow .ic{color:var(--rg)}
+.brow{display:flex;justify-content:space-between;gap:10px;padding:10px 16px;border-top:1px solid var(--line);font-weight:600;font-size:14.5px}
+.dsep + .brow{border-top:0}
+.brow.tot{font-weight:800}
+.brow.net{font-size:18px;font-weight:800;background:#F1FAF4}
+details.more{margin-top:10px}
+details.more summary{color:var(--rg);font-weight:800;padding:6px 0;cursor:pointer}
+.ded{background:#fff;border:1.5px solid var(--line);border-radius:14px;padding:8px 8px 10px 12px;margin-bottom:8px}
+.ded .dtop{display:flex;align-items:center;gap:6px}
+.ded .dn{flex:1;border:0!important;padding:6px 0!important;font-weight:800!important;background:transparent!important}
+.ded .dx{width:36px;height:36px;color:var(--mut)}
+.ded .dbot{display:flex;gap:6px}
+.ded .dbot input{flex:0 0 74px;padding:9px 10px!important}
+.ded .dbot select{flex:1;padding:9px 6px!important;font-size:14px!important;min-width:0}
+.card2{background:#fff;border:1px solid var(--line);border-radius:18px;padding:14px;margin-top:18px}
 </style>
 </head>
 <body>
@@ -229,7 +243,9 @@ const CUTE = {
   flower: `<g fill="#F7B8C3"><circle cx="24" cy="13" r="7.5"/><circle cx="34.5" cy="20.6" r="7.5"/><circle cx="30.5" cy="33" r="7.5"/><circle cx="17.5" cy="33" r="7.5"/><circle cx="13.5" cy="20.6" r="7.5"/></g><circle cx="24" cy="24" r="7" fill="#F7C873"/><circle cx="21.6" cy="23.2" r="1.1" fill="#4A3036"/><circle cx="26.4" cy="23.2" r="1.1" fill="#4A3036"/><path d="M22.4 26q1.6 1.3 3.2 0" fill="none" stroke="#4A3036" stroke-width="1.1" stroke-linecap="round"/>`,
   cart: `<path d="M4 9h5l4.5 22h22l4-15H12" fill="none" stroke="#C7848C" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M12.5 16h27l-3.6 13H15z" fill="#F6C7C3"/><circle cx="17" cy="38" r="3.5" fill="#B76E79"/><circle cx="32" cy="38" r="3.5" fill="#B76E79"/><path d="M26 27c-3-2-3.2-4.3-1.5-4.6.8-.1 1.3.3 1.5.9.2-.6.7-1 1.5-.9 1.7.3 1.5 2.6-1.5 4.6z" fill="#E25C70"/>`,
   diamond: `<path d="M14 9h20l8 10-18 22L6 19z" fill="#F6D3CB" stroke="#D9A59A" stroke-width="1.6" stroke-linejoin="round"/><path d="M14 19l10 22L6 19z" fill="#EDB8B0"/><path d="M6 19h36M18 9l-4 10 10 22 10-22-4-10" fill="none" stroke="#D9A59A" stroke-width="1.4" stroke-linejoin="round"/><path d="M38 4l1 2.6 2.6 1-2.6 1L38 11.2l-1-2.6-2.6-1 2.6-1z" fill="#F7C873"/>`,
-  baby: `<rect x="17" y="13" width="14" height="29" rx="6" fill="#F6C7C3"/><rect x="15" y="11" width="18" height="5" rx="2.5" fill="#B76E79"/><path d="M20 11c0-4 1.6-6.5 4-6.5S28 7 28 11z" fill="#F7C873"/><path d="M17 22h5M17 27h5M17 32h5" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/><path d="M27 36c-2.6-1.8-2.8-3.7-1.4-3.9.7-.1 1.1.3 1.4.8.3-.5.7-.9 1.4-.8 1.4.2 1.2 2.1-1.4 3.9z" fill="#E25C70"/>`
+  baby: `<rect x="17" y="13" width="14" height="29" rx="6" fill="#F6C7C3"/><rect x="15" y="11" width="18" height="5" rx="2.5" fill="#B76E79"/><path d="M20 11c0-4 1.6-6.5 4-6.5S28 7 28 11z" fill="#F7C873"/><path d="M17 22h5M17 27h5M17 32h5" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/><path d="M27 36c-2.6-1.8-2.8-3.7-1.4-3.9.7-.1 1.1.3 1.4.8.3-.5.7-.9 1.4-.8 1.4.2 1.2 2.1-1.4 3.9z" fill="#E25C70"/>`,
+  calc: `<rect x="10" y="4.5" width="28" height="39" rx="7" fill="#F6C7C3"/><rect x="14" y="9" width="20" height="9.5" rx="3" fill="#fff"/><path d="M24.5 13.8h6.5" stroke="#2E9D5B" stroke-width="2.2" stroke-linecap="round"/><g fill="#fff"><circle cx="17.5" cy="25" r="2.6"/><circle cx="24" cy="25" r="2.6"/><circle cx="30.5" cy="25" r="2.6"/><circle cx="17.5" cy="31.5" r="2.6"/><circle cx="24" cy="31.5" r="2.6"/><circle cx="30.5" cy="31.5" r="2.6"/><circle cx="17.5" cy="38" r="2.6"/><circle cx="24" cy="38" r="2.6"/></g><circle cx="30.5" cy="38" r="2.6" fill="#F4C56E"/><ellipse cx="14" cy="11" rx="1.4" ry="3" fill="#fff" opacity=".5" transform="rotate(20 14 11)"/>`,
+  brief: `<path d="M18 13v-3a3 3 0 0 1 3-3h6a3 3 0 0 1 3 3v3" fill="none" stroke="#B76E79" stroke-width="2.6"/><rect x="7" y="13" width="34" height="27" rx="6" fill="#F6C7C3"/><rect x="7" y="21" width="34" height="4.5" fill="#EFA9AE"/><rect x="21" y="19.5" width="6" height="8" rx="2" fill="#B76E79"/><path d="M38 4l1 2.6 2.6 1-2.6 1L38 11.2l-1-2.6-2.6-1 2.6-1z" fill="#F7C873"/>`
 };
 // The Money Tiles logo: four rose-gold tiles holding a +, a coin, a tick and a heart.
 const LOGO = `<path d="M9,4h9a5,5 0 0 1 5,5v9a5,5 0 0 1 -5,5h-9a5,5 0 0 1 -5,-5v-9a5,5 0 0 1 5,-5z" fill="#FFFFFF"/><path d="M30,4h9a5,5 0 0 1 5,5v9a5,5 0 0 1 -5,5h-9a5,5 0 0 1 -5,-5v-9a5,5 0 0 1 5,-5z" fill="#C98A88"/><path d="M9,25h9a5,5 0 0 1 5,5v9a5,5 0 0 1 -5,5h-9a5,5 0 0 1 -5,-5v-9a5,5 0 0 1 5,-5z" fill="#E2A9A0"/><path d="M30,25h9a5,5 0 0 1 5,5v9a5,5 0 0 1 -5,5h-9a5,5 0 0 1 -5,-5v-9a5,5 0 0 1 5,-5z" fill="#F6C7C3"/><path d="M12,8.5h3v3.5h3.5v3h-3.5v3.5h-3v-3.5h-3.5v-3h3.5z" fill="#2E9D5B"/><path d="M29,13.5a5.5,5.5 0 1 0 11,0a5.5,5.5 0 1 0 -11,0z" fill="#F4C56E" stroke="#FFF1D2" stroke-width="1.2"/><path d="M30.9,13.5a3.6,3.6 0 1 0 7.2,0a3.6,3.6 0 1 0 -7.2,0z" fill="none" stroke="#DDA247" stroke-width="1.3"/><path d="M32.2,11.6a2.4,2.4 0 0 1 2.3,-1" fill="none" stroke="#fff" stroke-width="1.1" stroke-linecap="round"/><path d="M8.8,34.6l3.2,3.2l6.2,-6.4" fill="none" stroke="#fff" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M34.5,40c-6.5,-4.3 -6.9,-9 -3.3,-9.4c1.6,-0.2 2.8,0.8 3.3,1.9c0.5,-1.1 1.7,-2.1 3.3,-1.9c3.6,0.4 3.2,5.1 -3.3,9.4z" fill="#E25C70"/>`;
@@ -283,15 +299,19 @@ function fresh() {
     tiles: [
       {id: 'earn', name: 'Earnings', kind: 'in', icon: 'piggy'},
       {id: 'tx', name: 'Transactions', kind: 'out', icon: 'bag'},
-      {id: 'budget', name: 'Budget', kind: 'check', icon: 'clip'}
+      {id: 'budget', name: 'Budget', kind: 'check', icon: 'clip'},
+      {id: 'pay', name: 'Paycheck', kind: 'pay', icon: 'calc', pay: defPay()}
     ],
-    items: []
+    items: [], payAdded: true, autoUpd: true
   };
 }
 function load() {
   try { S = JSON.parse(localStorage.getItem(KEY)); } catch (e) { S = null; }
   if (!S || S.v !== 2 || !Array.isArray(S.tiles)) S = fresh();
   if (!Array.isArray(S.items)) S.items = [];
+  // 2.2 added the Paycheck calculator tile: give it to existing installs once (she can delete it).
+  if (!S.payAdded) { if (!S.tiles.some(t => t.kind === 'pay')) S.tiles.push({id: 'pay', name: 'Paycheck', kind: 'pay', icon: 'calc', pay: defPay()}); S.payAdded = true; save(); }
+  if (S.autoUpd == null) S.autoUpd = true;
 }
 function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { toast('Could not save on this phone'); } }
 const tileOf = id => S.tiles.find(t => t.id === id);
@@ -302,8 +322,8 @@ const mStart = m => m + '-01';
 const mEnd = m => { const [y, mo] = m.split('-').map(Number); return `${m}-${pad(monthEnd(y, mo - 1))}`; };
 const mLabel = m => { const [y, mo] = m.split('-').map(Number); return `${MON[mo - 1]} ${y}`; };
 const mShift = (m, n) => addMonths(mStart(m), n, 1).slice(0, 7);
-const FREQ = {week: 'Every week', '2week': 'Every 2 weeks', month: 'Every month', year: 'Every year'};
-const FREQ_SHORT = {week: 'Weekly', '2week': 'Every 2 weeks', month: 'Monthly', year: 'Yearly'};
+const FREQ = {week: 'Every week', '2week': 'Every 2 weeks', month: 'Every month', quarter: 'Every 3 months', year: 'Every year'};
+const FREQ_SHORT = {week: 'Weekly', '2week': 'Every 2 weeks', month: 'Monthly', quarter: 'Every 3 months', year: 'Yearly'};
 const repeats = it => !!(it.rep && it.rep.f);
 // The nth date of a repeating item (n = 0 is its first date).
 function nth(it, n) {
@@ -311,6 +331,7 @@ function nth(it, n) {
   if (f === 'week') return addDays(it.date, 7 * n);
   if (f === '2week') return addDays(it.date, 14 * n);
   if (f === 'month') return addMonths(it.date, n, day);
+  if (f === 'quarter') return addMonths(it.date, 3 * n, day);
   if (f === 'year') return addMonths(it.date, 12 * n, day);
   return it.date;
 }
@@ -405,8 +426,8 @@ function renderHome() {
   $('#mLbl').textContent = mLabel(curM);
   $('#totH').textContent = `${MON[+curM.slice(5) - 1]} totals`;
   const tt = S.tiles.map(t => ({t, x: tileTotals(t, curM)}));
-  $('#tgrid').innerHTML = tt.map(({t, x}) => `<div class="tg"><small>${esc(t.name)}</small><b class="${kindClass(t.kind)}">${signed(x.total, t.kind)}</b>${t.kind === 'check' ? `<i>${fmt(x.paid)} paid</i>` : `<i>${x.count} ${x.count === 1 ? 'entry' : 'entries'}</i>`}</div>`).join('');
-  $('#tiles').innerHTML = tt.map(({t, x}) => `<button class="tile" data-t="${t.id}"><div class="ti">${cute(t.icon, 46)}</div><div class="tn">${esc(t.name)}</div>
+  $('#tgrid').innerHTML = tt.filter(({t}) => t.kind !== 'pay').map(({t, x}) => `<div class="tg"><small>${esc(t.name)}</small><b class="${kindClass(t.kind)}">${signed(x.total, t.kind)}</b>${t.kind === 'check' ? `<i>${fmt(x.paid)} paid</i>` : `<i>${x.count} ${x.count === 1 ? 'entry' : 'entries'}</i>`}</div>`).join('');
+  $('#tiles').innerHTML = tt.map(({t, x}) => t.kind === 'pay' ? payTileHTML(t) : `<button class="tile" data-t="${t.id}"><div class="ti">${cute(t.icon, 46)}</div><div class="tn">${esc(t.name)}</div>
       <div class="tt ${kindClass(t.kind)}">${signed(x.total, t.kind)}</div>
       ${t.kind === 'check' ? `<div class="ts">${x.doneCount} of ${x.count} paid</div><div class="pb"><i style="width:${x.total > 0 ? x.paid / x.total * 100 : 0}%"></i></div>` : `<div class="ts">${x.count} ${x.count === 1 ? 'entry' : 'entries'} this month</div>`}
     </button>`).join('') + `<button class="tile add" id="addTile"><span class="plus">${ic('add')}</span>Add a tile</button>`;
@@ -416,6 +437,7 @@ function renderHome() {
 
 /* ---------- TILE PAGE ---------- */
 function openTile(id) {
+  if ((tileOf(id) || {}).kind === 'pay') return openPay(id);
   let mode = 'list', selDay = null;
   const t = tileOf(id);
   const el = sheet(t.name, '', {icon: t.icon, head: `<button class="ib" data-more aria-label="Edit tile">${ic('more')}</button>`, fab: () => itemForm({tile: id, date: selDay || defDate()})});
@@ -589,7 +611,8 @@ function itemForm(it0, occDate) {
 const KINDS = [
   {k: 'in', t: 'Money coming in', d: 'Like Earnings. Shows in green with a +.', sw: '+', c: '#E3F4E9', fc: 'var(--green)'},
   {k: 'out', t: 'Money going out', d: 'Like Transactions. Shows in red with a −.', sw: MINUS, c: '#FBE3E5', fc: 'var(--red)'},
-  {k: 'check', t: 'Checklist to pay', d: 'Like Budget. Tick things off as you pay them.', sw: '✓', c: '#FBE3DF', fc: 'var(--rg)'}
+  {k: 'check', t: 'Checklist to pay', d: 'Like Budget. Tick things off as you pay them.', sw: '✓', c: '#FBE3DF', fc: 'var(--rg)'},
+  {k: 'pay', t: 'Pay calculator', d: 'Work out a paycheck from hours, overtime and deductions.', sw: '$', c: '#FFF1D2', fc: '#B7862F'}
 ];
 function tileForm(t) {
   const isNew = !t;
@@ -614,8 +637,8 @@ function tileForm(t) {
     sync();
     q('#tSave').onclick = () => {
       const name = q('#tName').value.trim(); if (!name) { toast('Give the tile a name'); q('#tName').focus(); return; }
-      if (isNew) S.tiles.push({id: uid(), name, kind, icon});
-      else Object.assign(t, {name, kind, icon});
+      if (isNew) S.tiles.push(Object.assign({id: uid(), name, kind, icon}, kind === 'pay' ? {pay: defPay()} : {}));
+      else { Object.assign(t, {name, kind, icon}); if (kind === 'pay' && !t.pay) t.pay = defPay(); }
       save(); closeTop(); refresh(); toast(isNew ? 'Tile added' : 'Saved');
     };
     if (!isNew) {
@@ -629,6 +652,199 @@ function tileForm(t) {
     }
   }});
 }
+
+/* ---------- PAY CALCULATOR ---------- */
+// Taxes default to typical rates and are labelled estimates; Settings → "Match a pay stub" tunes them to her real checks.
+function defPay() {
+  return {rate: 0, freq: '2week', otAfter: 40, otMult: 1.5, hours: {w1: '', w2: '', hol: '', dt: '', extra: ''},
+    ded: [
+      {id: 'fed', name: 'Federal income tax', mode: 'pct', val: 10, when: 'tax'},
+      {id: 'ss', name: 'Social Security', mode: 'pct', val: 6.2, when: 'tax'},
+      {id: 'med', name: 'Medicare', mode: 'pct', val: 1.45, when: 'tax'},
+      {id: 'az', name: 'Arizona state tax', mode: 'pct', val: 2, when: 'tax'},
+      {id: 'health', name: 'Health insurance', mode: 'amt', val: 0, when: 'pre'},
+      {id: 'ret', name: 'Retirement (401k / 403b)', mode: 'pct', val: 0, when: 'pre'}
+    ]};
+}
+const num = v => { const n = parseFloat(String(v == null ? '' : v).replace(/[^\d.]/g, '')); return isFinite(n) ? n : 0; };
+const numS = v => { const n = parseFloat(String(v == null ? '' : v).replace(/[^\d.\-]/g, '')); return isFinite(n) ? n : 0; };
+const hrs = n => `${r2(n)} hr${r2(n) === 1 ? '' : 's'}`;
+// Everything that comes out of a check for a given gross: before-tax items, then taxes on what's left, then after-tax items.
+function deductions(p, gross) {
+  const cut = [], amt = (d, base) => d.mode === 'pct' ? base * numS(d.val) / 100 : numS(d.val);
+  let pre = 0, tax = 0, post = 0;
+  for (const d of p.ded) if (d.when === 'pre') { const v = amt(d, gross); if (v) { cut.push({l: d.name, v}); pre += v; } }
+  const taxable = Math.max(0, gross - pre);
+  for (const d of p.ded) if (d.when === 'tax') { const v = amt(d, taxable); if (v) { cut.push({l: d.name, v}); tax += v; } }
+  for (const d of p.ded) if (d.when === 'post') { const v = amt(d, gross); if (v) { cut.push({l: d.name, v}); post += v; } }
+  return {cut, total: r2(pre + tax + post), net: r2(Math.max(0, gross - pre - tax - post))};
+}
+function payCalc(p, h) {
+  const weeks = p.freq === '2week' ? [num(h.w1), num(h.w2)] : [num(h.w1)];
+  const cap = num(p.otAfter) || 40, rate = num(p.rate), mult = num(p.otMult) || 1.5;
+  let reg = 0, ot = 0;
+  for (const w of weeks) { reg += Math.min(w, cap); ot += Math.max(0, w - cap); }   // overtime counts per week
+  const hol = num(h.hol), dt = num(h.dt), extra = num(h.extra), lines = [];
+  if (reg) lines.push({l: `Regular · ${hrs(reg)} × ${fmt(rate)}`, v: reg * rate});
+  if (ot) lines.push({l: `Overtime · ${hrs(ot)} × ${fmt(rate * mult)}`, v: ot * rate * mult});
+  if (dt) lines.push({l: `Double time · ${hrs(dt)} × ${fmt(rate * 2)}`, v: dt * rate * 2});
+  if (hol) lines.push({l: `Holiday / PTO · ${hrs(hol)} × ${fmt(rate)}`, v: hol * rate});
+  if (extra) lines.push({l: 'Bonus / other pay', v: extra});
+  const gross = r2(lines.reduce((t, x) => t + x.v, 0));
+  return Object.assign({lines, gross, hours: r2(reg + ot + dt + hol), reg: r2(reg), ot: r2(ot)}, deductions(p, gross));
+}
+function payTileHTML(t) {
+  const p = t.pay || defPay(), c = p.rate ? payCalc(p, p.hours) : null;
+  const body = !p.rate ? `<div class="tt rg" style="font-size:17px">Work out my pay</div><div class="ts">Set your hourly rate to start</div>`
+    : c.gross ? `<div class="tt green">+${fmt(c.net)}</div><div class="ts">take-home for ${hrs(c.hours)}</div>`
+    : `<div class="tt rg" style="font-size:17px">Work out my pay</div><div class="ts">Type in your hours</div>`;
+  return `<button class="tile" data-t="${t.id}"><div class="ti">${cute(t.icon, 46)}</div><div class="tn">${esc(t.name)}</div>${body}</button>`;
+}
+function openPay(id) {
+  const t = tileOf(id); if (!t.pay) { t.pay = defPay(); save(); }
+  const el = sheet(t.name, '', {icon: t.icon, head: `<button class="ib" data-set aria-label="Pay settings">${ic('gear')}</button><button class="ib" data-more aria-label="Edit tile">${ic('more')}</button>`});
+  el.querySelector('[data-set]').onclick = () => paySettings(id);
+  el.querySelector('[data-more]').onclick = () => tileForm(tileOf(id));
+  const draw = () => {
+    const T = tileOf(id); if (!T) return;
+    const p = T.pay, h = p.hours, two = p.freq === '2week';
+    el.querySelector('h2').innerHTML = `<span class="mini">${cute(T.icon, 26)}</span><span>${esc(T.name)}</span>`;
+    if (!p.rate) {
+      el.querySelector('.sb').innerHTML = `<div class="empty"><div class="ei">${cute('calc', 84)}</div>Let's set up your pay first: your hourly rate and what comes out of your check.<br><button class="btn" data-go>${ic('gear')}Set up my pay</button></div>`;
+      el.querySelector('[data-go]').onclick = () => paySettings(id);
+      return;
+    }
+    const inp = (k, label, ph) => `<div class="fld"><label>${label}</label><input data-h="${k}" inputmode="decimal" value="${esc(h[k])}" placeholder="${ph}" autocomplete="off"></div>`;
+    el.querySelector('.sb').innerHTML = `
+      <div class="big"><small>Take-home pay (estimate)</small><b class="green" id="pNet"></b><small id="pSub"></small></div>
+      <div class="list" style="padding:2px 16px 14px">
+        ${inp('w1', two ? 'Hours worked · week 1' : 'Hours worked this week', 'e.g. 40')}
+        ${two ? inp('w2', 'Hours worked · week 2', 'e.g. 44') : ''}
+        <div class="hint">Overtime is worked out for you: hours over ${num(p.otAfter) || 40} in a week are paid at ${num(p.otMult) || 1.5}×.</div>
+        <details class="more" ${h.hol || h.dt || h.extra ? 'open' : ''}><summary>Holiday, double time or a bonus</summary>
+          ${inp('hol', 'Holiday / PTO hours', '0')}${inp('dt', 'Double-time hours', '0')}${inp('extra', 'Bonus or other pay ($)', '0.00')}
+        </details>
+      </div>
+      <div class="list" id="pBreak"></div>
+      <div class="form"><button class="btn" id="pAdd">${ic('add')}Add to Earnings</button><button class="btn soft" id="pSet">${ic('gear')}Pay rate & deductions</button></div>`;
+    const calc = () => {
+      const c = payCalc(p, h);
+      el.querySelector('#pNet').textContent = '+' + fmt(c.net);
+      el.querySelector('#pSub').textContent = c.gross ? `${hrs(c.hours)}${c.ot ? ` · ${hrs(c.ot)} overtime` : ''} · gross ${fmt(c.gross)}` : 'Type in your hours below';
+      el.querySelector('#pBreak').innerHTML = c.gross ? `<div class="dsep">Your pay</div>${c.lines.map(x => `<div class="brow"><span>${esc(x.l)}</span><b>${fmt(x.v)}</b></div>`).join('')}
+        <div class="brow tot"><span>Gross pay</span><b>${fmt(c.gross)}</b></div>
+        <div class="dsep">Comes out of your check</div>${c.cut.map(x => `<div class="brow"><span>${esc(x.l)}</span><b class="red">${x.v < 0 ? '+' : MINUS}${fmt(x.v)}</b></div>`).join('') || '<div class="brow"><span class="mut">Nothing set up yet</span></div>'}
+        <div class="brow tot"><span>Total taken out</span><b class="red">${MINUS}${fmt(c.total)}</b></div>
+        <div class="brow net"><span>Take-home</span><b class="green">+${fmt(c.net)}</b></div>` : '';
+      return c;
+    };
+    let tm;
+    el.querySelectorAll('[data-h]').forEach(i => i.oninput = () => { h[i.dataset.h] = i.value; calc(); clearTimeout(tm); tm = setTimeout(() => { save(); renderHome(); }, 400); });
+    calc();
+    el.querySelector('#pSet').onclick = () => paySettings(id);
+    el.querySelector('#pAdd').onclick = () => {
+      const c = calc(); if (!c.gross) { toast('Type in your hours first'); return; }
+      const et = S.tiles.find(x => x.id === 'earn' && x.kind === 'in') || S.tiles.find(x => x.kind === 'in');
+      if (!et) { toast('Add a "money coming in" tile first'); return; }
+      const pe = pop(`<h3>Add to ${esc(et.name)}</h3><div class="form"><div class="fld"><label>Payday</label><input type="date" id="pDay" value="${today()}"></div><div class="fld"><label>Name</label><input id="pName" value="Paycheck"></div><button class="btn" id="pOk">${ic('check')}Add +${fmt(c.net)}</button></div>`);
+      pe.querySelector('#pOk').onclick = () => {
+        const date = pe.querySelector('#pDay').value || today();
+        S.items.push({id: uid(), tile: et.id, name: pe.querySelector('#pName').value.trim() || 'Paycheck', amt: c.net, date, rep: null,
+          note: `${hrs(c.hours)}${c.ot ? `, ${hrs(c.ot)} OT` : ''} · from the pay calculator`, done: {}, skip: {}});
+        save(); closeTop(); refresh(); toast(`Added to ${et.name}`);
+      };
+    };
+  };
+  el._draw = draw; draw();
+  return el;
+}
+const WHEN = {pre: 'Before taxes', tax: 'Tax', post: 'After taxes'};
+function paySettings(id) {
+  const t = tileOf(id), p = JSON.parse(JSON.stringify(t.pay || defPay()));
+  const dedRow = d => `<div class="ded" data-d="${esc(d.id)}">
+      <div class="dtop"><input class="dn" value="${esc(d.name)}" placeholder="What is it?"><button class="ib dx" aria-label="Remove">${ic('del')}</button></div>
+      <div class="dbot"><input class="dv" inputmode="decimal" value="${d.val === 0 ? '' : esc(d.val)}" placeholder="0">
+        <select class="dm"><option value="pct" ${d.mode === 'pct' ? 'selected' : ''}>% of pay</option><option value="amt" ${d.mode === 'amt' ? 'selected' : ''}>$ each check</option></select>
+        <select class="dw">${Object.entries(WHEN).map(([k, v]) => `<option value="${k}" ${d.when === k ? 'selected' : ''}>${v}</option>`).join('')}</select></div></div>`;
+  const el = sheet('Pay settings', `<div class="form">
+    <div class="fld"><label>Hourly pay rate</label><input id="sRate" inputmode="decimal" value="${p.rate || ''}" placeholder="e.g. 22.50"></div>
+    <div class="fld"><label>How often are you paid?</label><div class="chips" id="sFreq"><button data-f="week">Every week</button><button data-f="2week">Every 2 weeks</button></div></div>
+    <div style="display:flex;gap:10px"><div class="fld" style="flex:1"><label>Overtime after</label><div class="inl" style="margin:0"><input id="sOtA" inputmode="decimal" value="${p.otAfter}" style="max-width:none"><span>hrs/wk</span></div></div>
+    <div class="fld" style="flex:1"><label>Overtime pays</label><div class="inl" style="margin:0"><input id="sOtM" inputmode="decimal" value="${p.otMult}" style="max-width:none"><span>× rate</span></div></div></div>
+    <div class="fld"><label>What comes out of your check</label><div id="sDed">${p.ded.map(dedRow).join('')}</div>
+      <button class="btn soft" id="sAddDed" style="margin-top:8px">${ic('add')}Add something that comes out</button>
+      <div class="hint">Copy these from a pay stub if you can. A tax as a %: the tax amount ÷ gross pay × 100. Federal and state start as rough guesses.</div></div>
+    <div class="card2"><b>Make it match a pay stub</b><div class="hint" style="margin-top:2px">Type in one real check and the calculator adjusts itself to match it.</div>
+      <div class="inl"><input id="sStubG" inputmode="decimal" placeholder="Gross pay" style="max-width:none;flex:1"><input id="sStubN" inputmode="decimal" placeholder="Take-home" style="max-width:none;flex:1"></div>
+      <button class="btn soft" id="sMatch">${ic('check')}Match it</button></div>
+    <button class="btn" id="sSave">${ic('check')}Save</button>
+  </div>`, {icon: 'calc'});
+  const q = s => el.querySelector(s);
+  const syncF = () => q('#sFreq').querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.f === p.freq));
+  q('#sFreq').onclick = e => { const b = e.target.closest('button'); if (b) { p.freq = b.dataset.f; syncF(); } }; syncF();
+  const wire = () => q('#sDed').querySelectorAll('.dx').forEach(b => b.onclick = () => b.closest('.ded').remove());
+  wire();
+  q('#sAddDed').onclick = () => { q('#sDed').insertAdjacentHTML('beforeend', dedRow({id: uid(), name: '', mode: 'amt', val: 0, when: 'post'})); wire(); q('#sDed').lastElementChild.querySelector('.dn').focus(); };
+  const collect = () => {
+    p.rate = num(q('#sRate').value); p.otAfter = num(q('#sOtA').value) || 40; p.otMult = num(q('#sOtM').value) || 1.5;
+    p.ded = [...q('#sDed').querySelectorAll('.ded')].map(r => ({id: r.dataset.d, name: r.querySelector('.dn').value.trim() || 'Deduction', val: numS(r.querySelector('.dv').value), mode: r.querySelector('.dm').value, when: r.querySelector('.dw').value}));
+  };
+  q('#sMatch').onclick = () => {
+    collect();
+    const G = num(q('#sStubG').value), N = num(q('#sStubN').value);
+    if (!(G > 0) || !(N > 0) || N > G) { toast('Type in the gross and take-home from one pay stub'); return; }
+    const diff = deductions(p, G).net - N;   // what the calculator still misses for this check
+    if (Math.abs(diff) < 0.01) { toast('It already matches'); return; }
+    let adj = p.ded.find(d => d.id === 'adj');
+    if (!adj) { adj = {id: 'adj', name: 'Other (to match pay stub)', mode: 'pct', val: 0, when: 'post'}; p.ded.push(adj); }
+    adj.val = Math.round((numS(adj.val) + diff / G * 100) * 1000) / 1000;
+    q('#sDed').innerHTML = p.ded.map(dedRow).join(''); wire();
+    toast(`Adjusted: that check now comes out to ${fmt(deductions(p, G).net)}`);
+  };
+  q('#sSave').onclick = () => {
+    collect();
+    if (!(p.rate > 0)) { toast('Type in your hourly rate'); q('#sRate').focus(); return; }
+    p.hours = (tileOf(id).pay || {}).hours || p.hours;
+    tileOf(id).pay = p; save(); closeTop(); refresh(); toast('Pay settings saved');
+  };
+}
+
+/* ---------- UPDATES ---------- */
+// The phone app asks GitHub for the newest release; Android installs it only if it's signed with the same key.
+const ver = () => (window.Native && Native.versionName) ? Native.versionName() : 'web';
+function cmpVer(a, b) { const x = String(a).split('.').map(Number), y = String(b).split('.').map(Number); for (let i = 0; i < 3; i++) { const d = (x[i] || 0) - (y[i] || 0); if (d) return d; } return 0; }
+let updManual = false;
+function checkUpdate(manual) {
+  if (!(window.Native && Native.checkUpdate)) { if (manual) toast('Updates work inside the phone app'); return; }
+  updManual = manual; if (manual) toast('Checking for updates…');
+  Native.checkUpdate();
+}
+window.onUpdateInfo = info => {
+  S.updLast = Date.now(); save();
+  if (!info || !info.ok || !info.url) { if (updManual) toast("Couldn't check right now. Are you online?"); return; }
+  const latest = String(info.tag || '').replace(/^v/, ''), cur = ver();
+  if (cmpVer(latest, cur) <= 0) { if (updManual) toast(`You have the newest version (${cur})`); return; }
+  if (!updManual && S.updSnooze === latest && Date.now() - (S.updSnoozeAt || 0) < 864e5) return;
+  const notes = String(info.notes || '').split('\n').map(s => s.trim()).filter(Boolean).slice(0, 4).map(esc).join('<br>');
+  const el = pop(`<h3>A new version is ready</h3><p>Money Tiles ${esc(latest)} is out (you have ${esc(cur)}).${notes ? '<br><br>' + notes : ''}<br><br>Your entries stay as they are.</p><div class="dlgb"><button data-n>Later</button><button data-y>Update now</button></div>`, {dlg: true});
+  el.querySelector('[data-n]').onclick = () => { S.updSnooze = latest; S.updSnoozeAt = Date.now(); save(); closeTop(); };
+  el.querySelector('[data-y]').onclick = () => { closeTop(); setTimeout(() => startUpdate(info.url), 260); };
+};
+function startUpdate(url) {
+  pop(`<h3>Updating Money Tiles</h3><p id="updMsg">Downloading…</p><div class="pb" style="margin:0 0 14px"><i id="updBar" style="width:0%"></i></div><div class="dlgb"><button data-n>Hide</button></div>`, {dlg: true})
+    .querySelector('[data-n]').onclick = () => closeTop();
+  Native.installUpdate(url);
+}
+window.onUpdateProgress = pct => {
+  const b = document.getElementById('updBar'), m = document.getElementById('updMsg');
+  if (b) b.style.width = pct + '%'; if (m) m.textContent = `Downloading… ${pct}%`;
+};
+window.onUpdateStage = (stage, msg) => {
+  const m = document.getElementById('updMsg');
+  if (stage === 'perm') { if (m) m.innerHTML = 'Android needs your OK once: turn on <b>Allow from this source</b>, then come back to Money Tiles.'; }
+  else if (stage === 'install') { if (m) m.innerHTML = 'Almost done: tap <b>Update</b> on the next screen.'; }
+  else if (stage === 'fail') { if (m) closeTop(); toast(msg || "The update didn't finish. Try again from Settings."); }
+};
 
 /* ---------- SETTINGS / DATA ---------- */
 function saveFile(name, text, mime) {
@@ -652,9 +868,21 @@ function restore() {
     const rd = new FileReader();
     rd.onload = async () => {
       let d; try { d = JSON.parse(rd.result); } catch (e) { d = null; }
-      if (!d || d.v !== 2 || !Array.isArray(d.tiles) || !Array.isArray(d.items)) { toast("That file isn't a Money Tiles backup"); return; }
-      if (!await ask('Restore this backup?', `${d.tiles.length} tiles and ${d.items.length} entries. Everything in the app now will be replaced.`, 'Restore', true)) return;
-      S = d; save(); closeAll(); refresh(); toast('Backup restored');
+      if (!d || d.v !== 2 || !Array.isArray(d.tiles) || !Array.isArray(d.items)) { toast("That file isn't a Money Tiles file"); return; }
+      const how = await choose('What should I do with this file?', [
+        {label: `Add it to what's already in the app`, v: 'merge', icon: 'add'},
+        {label: 'Replace everything in the app with it', v: 'replace', icon: 'restore', danger: true}
+      ], `${d.tiles.length} tiles · ${d.items.length} entries`);
+      if (!how) return;
+      if (how === 'replace') {
+        if (!await ask('Replace everything?', 'Everything in the app now will be replaced by this file.', 'Replace', true)) return;
+        localStorage.setItem(KEY, JSON.stringify(d)); load(); closeAll(); refresh(); toast('Done: the app now matches the file'); return;
+      }
+      // merge: add tiles it doesn't have yet, and entries it doesn't have yet (same file twice adds nothing)
+      let nt = 0, ni = 0; const have = new Set(S.items.map(i => i.id));
+      for (const t of d.tiles) if (!tileOf(t.id)) { S.tiles.push(t); nt++; }
+      for (const it of d.items) if (!have.has(it.id)) { S.items.push(it); ni++; }
+      save(); closeAll(); refresh(); toast(`Added ${ni} entr${ni === 1 ? 'y' : 'ies'}${nt ? ` and ${nt} tile${nt > 1 ? 's' : ''}` : ''}`);
     };
     rd.readAsText(f);
   };
@@ -667,8 +895,12 @@ function openSettings() {
     <div class="list" style="margin:18px 0 0">
       <button class="setrow" id="sCsv">${ic('dl')}<span>Export this year to a spreadsheet (CSV)</span></button>
       <button class="setrow" id="sBak">${ic('backup')}<span>Back up my data</span></button>
-      <button class="setrow" id="sRes">${ic('restore')}<span>Restore a backup</span></button>
+      <button class="setrow" id="sRes">${ic('restore')}<span>Restore or import a file</span></button>
     </div>
+    <div class="fld" style="margin-top:22px"><label>Updates</label><div class="list" style="margin:0">
+      <label class="setrow"><span style="flex:1">Check for updates automatically</span><input type="checkbox" id="sAuto" ${S.autoUpd ? 'checked' : ''} style="width:22px;height:22px;accent-color:var(--rg)"></label>
+      <button class="setrow" id="sUpd">${ic('restore')}<span style="flex:1">Check for updates now</span><span class="mut">v${esc(ver())}</span></button></div>
+      <div class="hint">When a new version comes out you get a pop-up. Tap Update now, then Update on Android's screen. Your entries stay.</div></div>
     <div class="hint" style="margin-top:12px">Everything is saved on this phone only. Back up before switching phones or uninstalling; the backup file goes to your Downloads folder.</div>
     <button class="btn ghost" id="sWipe" style="margin-top:28px">${ic('del')}Erase everything</button>
   </div>`, {icon: 'diamond', mount: el => {
@@ -677,6 +909,8 @@ function openSettings() {
     q('#sCsv').onclick = exportCSV;
     q('#sBak').onclick = () => saveFile(`money-tiles-backup-${stamp()}.json`, JSON.stringify(S), 'application/json');
     q('#sRes').onclick = restore;
+    q('#sAuto').onchange = e => { S.autoUpd = e.target.checked; save(); };
+    q('#sUpd').onclick = () => checkUpdate(true);
     q('#sWipe').onclick = async () => { if (!await ask('Erase everything?', 'All tiles and entries will be deleted from this phone. This cannot be undone.', 'Erase', true)) return; S = fresh(); save(); closeAll(); refresh(); toast('Erased'); };
   }});
 }
@@ -692,6 +926,7 @@ function boot() {
   $('#mNext').onclick = () => { curM = mShift(curM, 1); refresh(); };
   $('#mLbl').onclick = () => { curM = today().slice(0, 7); refresh(); };
   load(); renderHome();
+  if (S.autoUpd && Date.now() - (S.updLast || 0) > 6 * 36e5) setTimeout(() => checkUpdate(false), 2500);
   setTimeout(() => { const s = $('#splash'); if (!s) return; s.style.opacity = 0; setTimeout(() => s.remove(), 400); }, 900);
 }
 document.addEventListener('visibilitychange', () => { if (!document.hidden && S) refresh(); });
