@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<title>iSaveMoney</title>
+<title>Money Tiles</title>
 <style>
 @font-face{font-family:Nunito;src:url(nunito.woff2) format('woff2');font-weight:400 800;font-display:swap}
 :root{
@@ -29,6 +29,7 @@ svg{display:block}
 .hero{background:var(--grad);color:#fff;padding:14px 12px 58px;border-radius:0 0 28px 28px;position:relative;overflow:hidden}
 .hero::after{content:"";position:absolute;top:-40px;right:-30px;width:170px;height:170px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.35),rgba(255,255,255,0) 70%)}
 .hrow{display:flex;align-items:center;gap:6px;position:relative;z-index:1}
+.hrow .hlogo{width:36px;height:36px;border-radius:11px;background:rgba(255,255,255,.9);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(120,60,70,.18)}
 .hrow h1{flex:1;margin:0;font-size:22px;font-weight:800;letter-spacing:.2px;display:flex;align-items:center;gap:6px}
 .ib{width:42px;height:42px;display:flex;align-items:center;justify-content:center;border-radius:50%}
 .ib:active{background:rgba(255,255,255,.25)}
@@ -178,11 +179,11 @@ svg{display:block}
 </head>
 <body>
 
-<div id="splash"><div class="logo" id="splashLogo"></div><div class="name">iSaveMoney</div></div>
+<div id="splash"><div class="logo" id="splashLogo"></div><div class="name">Money Tiles</div></div>
 
 <div class="hero">
   <div class="hrow">
-    <h1 id="appTitle">iSaveMoney</h1>
+    <h1 id="appTitle">Money Tiles</h1>
     <button class="ib" id="setBtn" aria-label="Settings"></button>
   </div>
   <div class="month"><button class="ib" id="mPrev" aria-label="Previous month"></button><b id="mLbl"></b><button class="ib" id="mNext" aria-label="Next month"></button></div>
@@ -230,6 +231,9 @@ const CUTE = {
   diamond: `<path d="M14 9h20l8 10-18 22L6 19z" fill="#F6D3CB" stroke="#D9A59A" stroke-width="1.6" stroke-linejoin="round"/><path d="M14 19l10 22L6 19z" fill="#EDB8B0"/><path d="M6 19h36M18 9l-4 10 10 22 10-22-4-10" fill="none" stroke="#D9A59A" stroke-width="1.4" stroke-linejoin="round"/><path d="M38 4l1 2.6 2.6 1-2.6 1L38 11.2l-1-2.6-2.6-1 2.6-1z" fill="#F7C873"/>`,
   baby: `<rect x="17" y="13" width="14" height="29" rx="6" fill="#F6C7C3"/><rect x="15" y="11" width="18" height="5" rx="2.5" fill="#B76E79"/><path d="M20 11c0-4 1.6-6.5 4-6.5S28 7 28 11z" fill="#F7C873"/><path d="M17 22h5M17 27h5M17 32h5" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/><path d="M27 36c-2.6-1.8-2.8-3.7-1.4-3.9.7-.1 1.1.3 1.4.8.3-.5.7-.9 1.4-.8 1.4.2 1.2 2.1-1.4 3.9z" fill="#E25C70"/>`
 };
+// The Money Tiles logo: four rose-gold tiles holding a +, a coin, a tick and a heart.
+const LOGO = `<path d="M9,4h9a5,5 0 0 1 5,5v9a5,5 0 0 1 -5,5h-9a5,5 0 0 1 -5,-5v-9a5,5 0 0 1 5,-5z" fill="#FFFFFF"/><path d="M30,4h9a5,5 0 0 1 5,5v9a5,5 0 0 1 -5,5h-9a5,5 0 0 1 -5,-5v-9a5,5 0 0 1 5,-5z" fill="#C98A88"/><path d="M9,25h9a5,5 0 0 1 5,5v9a5,5 0 0 1 -5,5h-9a5,5 0 0 1 -5,-5v-9a5,5 0 0 1 5,-5z" fill="#E2A9A0"/><path d="M30,25h9a5,5 0 0 1 5,5v9a5,5 0 0 1 -5,5h-9a5,5 0 0 1 -5,-5v-9a5,5 0 0 1 5,-5z" fill="#F6C7C3"/><path d="M12,8.5h3v3.5h3.5v3h-3.5v3.5h-3v-3.5h-3.5v-3h3.5z" fill="#2E9D5B"/><path d="M29,13.5a5.5,5.5 0 1 0 11,0a5.5,5.5 0 1 0 -11,0z" fill="#F4C56E" stroke="#FFF1D2" stroke-width="1.2"/><path d="M30.9,13.5a3.6,3.6 0 1 0 7.2,0a3.6,3.6 0 1 0 -7.2,0z" fill="none" stroke="#DDA247" stroke-width="1.3"/><path d="M32.2,11.6a2.4,2.4 0 0 1 2.3,-1" fill="none" stroke="#fff" stroke-width="1.1" stroke-linecap="round"/><path d="M8.8,34.6l3.2,3.2l6.2,-6.4" fill="none" stroke="#fff" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M34.5,40c-6.5,-4.3 -6.9,-9 -3.3,-9.4c1.6,-0.2 2.8,0.8 3.3,1.9c0.5,-1.1 1.7,-2.1 3.3,-1.9c3.6,0.4 3.2,5.1 -3.3,9.4z" fill="#E25C70"/>`;
+const logo = size => `<svg width="${size}" height="${size}" viewBox="0 0 48 48">${LOGO}</svg>`;
 const cute = (n, size) => `<svg width="${size || 44}" height="${size || 44}" viewBox="0 0 48 48">${CUTE[n] || CUTE.heart}</svg>`;
 
 /* ---------- helpers ---------- */
@@ -639,7 +643,7 @@ function exportCSV() {
     rows.push([e.d, t.name, e.it.name, (t.kind === 'out' ? -e.it.amt : e.it.amt).toFixed(2), repeats(e.it) ? FREQ[e.it.rep.f] : '', t.kind === 'check' ? (e.done ? 'yes' : 'no') : '', e.it.note]);
   rows.sort((a, b) => a[0].localeCompare(b[0]));
   rows.unshift(['Date', 'Tile', 'Name', 'Amount', 'Repeats', 'Paid', 'Note']);
-  saveFile(`isavemoney-${y}.csv`, rows.map(r => r.map(q).join(',')).join('\n'), 'text/csv');
+  saveFile(`money-tiles-${y}.csv`, rows.map(r => r.map(q).join(',')).join('\n'), 'text/csv');
 }
 function restore() {
   const inp = document.createElement('input'); inp.type = 'file'; inp.accept = '.json,application/json,text/plain,*/*';
@@ -648,7 +652,7 @@ function restore() {
     const rd = new FileReader();
     rd.onload = async () => {
       let d; try { d = JSON.parse(rd.result); } catch (e) { d = null; }
-      if (!d || d.v !== 2 || !Array.isArray(d.tiles) || !Array.isArray(d.items)) { toast("That file isn't an iSaveMoney backup"); return; }
+      if (!d || d.v !== 2 || !Array.isArray(d.tiles) || !Array.isArray(d.items)) { toast("That file isn't a Money Tiles backup"); return; }
       if (!await ask('Restore this backup?', `${d.tiles.length} tiles and ${d.items.length} entries. Everything in the app now will be replaced.`, 'Restore', true)) return;
       S = d; save(); closeAll(); refresh(); toast('Backup restored');
     };
@@ -671,7 +675,7 @@ function openSettings() {
     const q = s => el.querySelector(s);
     q('#sCur').onclick = e => { const b = e.target.closest('button'); if (!b) return; S.currency = b.dataset.c; save(); q('#sCur').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); refresh(); };
     q('#sCsv').onclick = exportCSV;
-    q('#sBak').onclick = () => saveFile(`isavemoney-backup-${stamp()}.json`, JSON.stringify(S), 'application/json');
+    q('#sBak').onclick = () => saveFile(`money-tiles-backup-${stamp()}.json`, JSON.stringify(S), 'application/json');
     q('#sRes').onclick = restore;
     q('#sWipe').onclick = async () => { if (!await ask('Erase everything?', 'All tiles and entries will be deleted from this phone. This cannot be undone.', 'Erase', true)) return; S = fresh(); save(); closeAll(); refresh(); toast('Erased'); };
   }});
@@ -679,9 +683,8 @@ function openSettings() {
 
 /* ---------- boot ---------- */
 function boot() {
-  $('#splashLogo').innerHTML = cute('piggy', 84);
-  $('#appTitle').innerHTML = `iSaveMoney ${ic('sparkle')}`;
-  $('#appTitle .ic').style.cssText = 'width:20px;height:20px;opacity:.9';
+  $('#splashLogo').innerHTML = logo(80);
+  $('#appTitle').innerHTML = `<span class="hlogo">${logo(26)}</span>Money Tiles`;
   $('#setBtn').innerHTML = ic('gear');
   $('#mPrev').innerHTML = ic('left'); $('#mNext').innerHTML = ic('right');
   $('#setBtn').onclick = openSettings;
