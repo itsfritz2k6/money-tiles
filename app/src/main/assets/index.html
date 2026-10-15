@@ -222,6 +222,14 @@ details.more summary{color:var(--rg);font-weight:800;padding:6px 0;cursor:pointe
 .stepper.sm{gap:6px}
 .stepper.sm button{width:36px;height:36px;font-size:20px}
 .stepper.sm input{width:56px;font-size:18px;padding:4px 0}
+.force{position:fixed;inset:0;z-index:90;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:24px}
+.force .fc{max-width:380px;width:100%;text-align:center}
+.force .flogo{width:104px;height:104px;margin:0 auto 14px;border-radius:30px;background:#FBE3DF;display:flex;align-items:center;justify-content:center;box-shadow:0 10px 30px rgba(183,110,121,.25)}
+.force h2{margin:0 0 8px;font-size:24px;font-weight:800;color:var(--rg)}
+.force p{color:#6d555a;line-height:1.5;margin:0 0 10px}
+.force ul{text-align:left;color:#6d555a;margin:0 0 6px;padding-left:22px;line-height:1.5;font-size:14.5px}
+.force .pb{margin-top:6px;height:9px}
+.force .flater{margin-top:16px;color:var(--mut);font-weight:700;text-decoration:underline}
 .card2{background:#fff;border:1px solid var(--line);border-radius:18px;padding:14px;margin-top:18px}
 </style>
 </head>
@@ -479,7 +487,7 @@ function choose(title, opts, msg) {
     el.querySelectorAll('[data-i]').forEach(b => b.onclick = () => { done = true; closeTop(); res(opts[+b.dataset.i].v); });
   });
 }
-window.appBack = function () { if (stack.length) { closeTop(); return true; } return false; };
+window.appBack = function () { if (document.getElementById('force')) return true; if (stack.length) { closeTop(); return true; } return false; };
 function refresh() { syncPredictions(); renderHome(); for (const s of stack) if (s.el._draw) s.el._draw(); }
 
 /* ---------- HOME ---------- */
@@ -1183,31 +1191,46 @@ function checkUpdate(manual) {
   updManual = manual; if (manual) toast('Checking for updates…');
   Native.checkUpdate();
 }
+// Any newer version is required: a full-screen "Update needed" page with no way around it. Only if the
+// download or install actually fails does a one-hour "not now" appear, so she is never locked out of her data.
 window.onUpdateInfo = info => {
   S.updLast = Date.now(); save();
   if (!info || !info.ok || !info.url) { if (updManual) toast("Couldn't check right now. Are you online?"); return; }
   const latest = String(info.tag || '').replace(/^v/, ''), cur = ver();
   if (cmpVer(latest, cur) <= 0) { if (updManual) toast(`You have the newest version (${cur})`); return; }
-  if (!updManual && S.updSnooze === latest && Date.now() - (S.updSnoozeAt || 0) < 864e5) return;
-  const notes = String(info.notes || '').split('\n').map(s => s.trim()).filter(Boolean).slice(0, 4).map(esc).join('<br>');
-  const el = pop(`<h3>A new version is ready</h3><p>Money Tiles ${esc(latest)} is out (you have ${esc(cur)}).${notes ? '<br><br>' + notes : ''}<br><br>Your entries stay as they are.</p><div class="dlgb"><button data-n>Later</button><button data-y>Update now</button></div>`, {dlg: true});
-  el.querySelector('[data-n]').onclick = () => { S.updSnooze = latest; S.updSnoozeAt = Date.now(); save(); closeTop(); };
-  el.querySelector('[data-y]').onclick = () => { closeTop(); setTimeout(() => startUpdate(info.url), 260); };
+  if (!updManual && Date.now() < (S.updSnoozeUntil || 0)) return;
+  forceUpdate(info, latest, cur);
 };
-function startUpdate(url) {
-  pop(`<h3>Updating Money Tiles</h3><p id="updMsg">Downloading…</p><div class="pb" style="margin:0 0 14px"><i id="updBar" style="width:0%"></i></div><div class="dlgb"><button data-n>Hide</button></div>`, {dlg: true})
-    .querySelector('[data-n]').onclick = () => closeTop();
-  Native.installUpdate(url);
+function forceUpdate(info, latest, cur) {
+  if (document.getElementById('force')) return;
+  const notes = String(info.notes || '').split('\n').map(s => s.trim()).filter(Boolean).slice(0, 4).map(n => `<li>${esc(n)}</li>`).join('');
+  const el = document.createElement('div'); el.id = 'force'; el.className = 'force';
+  el.innerHTML = `<div class="fc"><div class="flogo">${logo(70)}</div><h2>Update needed</h2>
+    <p>Money Tiles ${esc(latest)} is ready (you have ${esc(cur)}). Update to keep using the app. It takes a moment, and all your entries stay.</p>
+    ${notes ? `<ul>${notes}</ul>` : ''}
+    <button class="btn" id="fUpd">${ic('dl')}Update now</button>
+    <p class="hint" id="updMsg" style="text-align:center"></p><div class="pb hidden" id="fBar"><i id="updBar" style="width:0%"></i></div>
+    <button class="flater hidden" id="fLater">Not now · remind me in an hour</button></div>`;
+  document.body.appendChild(el);
+  el.querySelector('#fUpd').onclick = () => {
+    el.querySelector('#fUpd').disabled = true; el.querySelector('#fUpd').style.opacity = .6;
+    el.querySelector('#fBar').classList.remove('hidden'); el.querySelector('#updMsg').textContent = 'Downloading…';
+    Native.installUpdate(info.url);
+  };
+  el.querySelector('#fLater').onclick = () => { S.updSnoozeUntil = Date.now() + 36e5; save(); el.remove(); };
 }
 window.onUpdateProgress = pct => {
   const b = document.getElementById('updBar'), m = document.getElementById('updMsg');
   if (b) b.style.width = pct + '%'; if (m) m.textContent = `Downloading… ${pct}%`;
 };
 window.onUpdateStage = (stage, msg) => {
-  const m = document.getElementById('updMsg');
+  const m = document.getElementById('updMsg'), f = document.getElementById('force');
   if (stage === 'perm') { if (m) m.innerHTML = 'Android needs your OK once: turn on <b>Allow from this source</b>, then come back to Money Tiles.'; }
   else if (stage === 'install') { if (m) m.innerHTML = 'Almost done: tap <b>Update</b> on the next screen.'; }
-  else if (stage === 'fail') { if (m) closeTop(); toast(msg || "The update didn't finish. Try again from Settings."); }
+  else if (stage === 'fail') {
+    if (m) m.textContent = msg || "The update didn't finish.";
+    if (f) { const b = f.querySelector('#fUpd'); b.disabled = false; b.style.opacity = 1; b.innerHTML = `${ic('restore')}Try again`; f.querySelector('#fLater').classList.remove('hidden'); }
+  }
 };
 
 /* ---------- SETTINGS / DATA ---------- */
@@ -1262,9 +1285,8 @@ function openSettings() {
       <button class="setrow" id="sRes">${ic('restore')}<span>Restore or import a file</span></button>
     </div>
     <div class="fld" style="margin-top:22px"><label>Updates</label><div class="list" style="margin:0">
-      <label class="setrow"><span style="flex:1">Check for updates automatically</span><input type="checkbox" id="sAuto" ${S.autoUpd ? 'checked' : ''} style="width:22px;height:22px;accent-color:var(--rg)"></label>
       <button class="setrow" id="sUpd">${ic('restore')}<span style="flex:1">Check for updates now</span><span class="mut">v${esc(ver())}</span></button></div>
-      <div class="hint">When a new version comes out you get a pop-up. Tap Update now, then Update on Android's screen. Your entries stay.</div></div>
+      <div class="hint">New versions install themselves: you get a notification, then an Update now screen. Tap it, then Update on Android's screen. Your entries stay.</div></div>
     <div class="hint" style="margin-top:12px">Everything is saved on this phone only. Back up before switching phones or uninstalling; the backup file goes to your Downloads folder.</div>
     <button class="btn ghost" id="sWipe" style="margin-top:28px">${ic('del')}Erase everything</button>
   </div>`, {icon: 'diamond', mount: el => {
@@ -1273,7 +1295,6 @@ function openSettings() {
     q('#sCsv').onclick = exportCSV;
     q('#sBak').onclick = () => saveFile(`money-tiles-backup-${stamp()}.json`, JSON.stringify(S), 'application/json');
     q('#sRes').onclick = restore;
-    q('#sAuto').onchange = e => { S.autoUpd = e.target.checked; save(); };
     q('#sUpd').onclick = () => checkUpdate(true);
     q('#sWipe').onclick = async () => { if (!await ask('Erase everything?', 'All tiles and entries will be deleted from this phone. This cannot be undone.', 'Erase', true)) return; S = fresh(); save(); closeAll(); refresh(); toast('Erased'); };
   }});
@@ -1290,10 +1311,10 @@ function boot() {
   $('#mNext').onclick = () => { curM = mShift(curM, 1); refresh(); };
   $('#mLbl').onclick = () => { curM = today().slice(0, 7); refresh(); };
   load(); syncPredictions(); renderHome();
-  if (S.autoUpd && Date.now() - (S.updLast || 0) > 6 * 36e5) setTimeout(() => checkUpdate(false), 2500);
+  setTimeout(() => checkUpdate(false), 1500);
   setTimeout(() => { const s = $('#splash'); if (!s) return; s.style.opacity = 0; setTimeout(() => s.remove(), 400); }, 900);
 }
-document.addEventListener('visibilitychange', () => { if (!document.hidden && S) refresh(); });
+document.addEventListener('visibilitychange', () => { if (!document.hidden && S) { refresh(); if (Date.now() - (S.updLast || 0) > 6e5) checkUpdate(false); } });
 boot();
 </script>
 </body>
