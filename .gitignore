@@ -5,3 +5,4 @@ app/build/
 *.idsig
 build.log
 local.properties
+app/src/main/assets/seed.js
