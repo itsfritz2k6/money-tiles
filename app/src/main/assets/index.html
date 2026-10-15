@@ -1,0 +1,1280 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>iSaveMoney</title>
+<style>
+:root{
+  --or:#FF8A1E; --or2:#F57C00; --blue:#1E88E5; --green:#7CB342; --red:#E53935;
+  --lav:#F3F0FA; --lav2:#E4E1F3; --ink:#212121; --mut:#6B6B78; --line:#E8E6EF; --bg:#FFFFFF;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:Roboto,"Segoe UI",system-ui,sans-serif;font-size:15px;overscroll-behavior:none}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+input,select,textarea{font:inherit;color:inherit}
+svg{display:block}
+.ic{width:24px;height:24px;fill:currentColor;flex:none}
+.blue{color:var(--blue)} .green{color:var(--green)} .red{color:var(--red)} .orange{color:var(--or2)} .mut{color:var(--mut)}
+.hidden{display:none!important}
+
+/* splash */
+#splash{position:fixed;inset:0;background:#fff;z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .35s}
+#splash .logo{width:104px;height:104px;border-radius:30px;background:#EEF0F5;display:flex;align-items:center;justify-content:center}
+#splash .spin{position:absolute;bottom:110px;width:14px;height:14px;border:2px solid #ccc;border-top-color:transparent;border-radius:50%;animation:sp 0.9s linear infinite}
+#splash .name{position:absolute;bottom:42px;font-size:21px;color:#222}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+/* app bar */
+#bar{position:fixed;top:0;left:0;right:0;height:56px;background:var(--or);color:#fff;display:flex;align-items:center;padding:0 6px;z-index:10}
+#bar .ib{width:44px;height:44px;display:flex;align-items:center;justify-content:center;border-radius:50%}
+#bar .ib:active{background:rgba(255,255,255,.18)}
+#title{flex:1;display:flex;align-items:center;justify-content:center;gap:4px;font-size:20px;font-weight:700;white-space:nowrap;overflow:hidden}
+#title span{overflow:hidden;text-overflow:ellipsis}
+main{padding:56px 0 76px}
+.view{display:none} .view.on{display:block}
+
+/* summary card */
+.card{background:#fff;border:1px solid var(--line);border-radius:10px;margin:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.sum{position:relative;padding:10px 0 0}
+.sum .top{display:flex;justify-content:space-between;padding:0 10px}
+.sum .top b{display:block;font-size:19px;font-weight:500}
+.sum .top small{font-size:12px;color:#333}
+.sum .top .r{text-align:right}
+.gauge{position:relative;width:172px;margin:-12px auto 0}
+.gauge svg{width:172px;height:auto}
+.sum .top{position:relative;z-index:1}
+.gauge .gl{position:absolute;left:0;right:0;bottom:4px;text-align:center}
+.gauge .gl span{display:block;font-size:15px;color:#333}
+.gauge .gl b{font-size:19px;font-weight:600}
+.pct{text-align:center;font-size:13px;color:#333;margin:4px 0 12px}
+.row3{display:flex;justify-content:space-between;padding:0 10px 10px;gap:6px}
+.row3 > div{text-align:center;flex:1} .row3 > div:first-child{text-align:left} .row3 > div:last-child{text-align:right}
+.row3 small{display:flex;align-items:center;gap:3px;font-size:12.5px;color:#333;white-space:nowrap}
+.row3 > div:nth-child(2) small{justify-content:center} .row3 > div:last-child small{justify-content:flex-end}
+.row3 b{display:block;font-size:19px;font-weight:500;margin-top:2px}
+.row3 .ic{width:16px;height:16px;color:var(--blue)}
+.sbar{position:relative;height:26px;background:var(--lav2);font-size:13.5px}
+.sbar .fill{position:absolute;left:0;top:0;bottom:0;background:var(--or);max-width:100%}
+.sbar .fill.over{background:var(--red)}
+.sbar .lbl{position:absolute;left:10px;top:0;line-height:26px;color:#222}
+.sbar .bp{position:absolute;left:0;right:0;text-align:center;line-height:26px;color:#222;font-weight:500}
+.ended{margin:8px;padding:10px 12px;border-radius:10px;background:#FFF3E0;border:1px solid #FFCC80;font-size:14px;display:flex;align-items:center;gap:10px}
+.ended button{margin-left:auto;color:#fff;background:var(--or);border-radius:16px;padding:6px 12px;font-weight:500;white-space:nowrap}
+
+/* toolbar */
+.tools{display:flex;align-items:center;justify-content:space-between;padding:6px 12px}
+.tools .tb{width:40px;height:40px;display:flex;align-items:center;justify-content:center;color:#5C6BC0;border-radius:8px}
+.tools .tb.on{color:var(--green)}
+.tools .tb.view{margin-left:auto;margin-right:16px;color:#333}
+.tools .filt{display:flex;align-items:center;gap:10px;border:1.5px solid #7986CB;color:#3949AB;border-radius:6px;padding:6px 14px;margin-right:16px;font-size:15px}
+.tools .filt.act{background:#E8EAF6}
+.tools .tb.hide{border:1.5px solid #c9c9d6;color:var(--green)}
+
+/* section lists */
+.sec{margin:6px 8px 10px;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff}
+.sech{display:flex;align-items:center;justify-content:space-between;background:var(--lav);padding:14px 14px;color:var(--or2);font-weight:500;font-size:15.5px}
+.sech .amt{display:flex;align-items:center;gap:6px;font-weight:600}
+.row{display:flex;align-items:center;gap:14px;padding:11px 14px;border-top:1px solid var(--line);min-height:62px}
+.row:first-of-type{border-top:0}
+.row:active{background:#F7F6FB}
+.av{width:38px;height:38px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;color:#fff;font-size:19px;font-weight:500}
+.av .ic{width:20px;height:20px}
+.mid{flex:1;min-width:0}
+.nm{font-size:16px;color:#222;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sub{font-size:14.5px;color:#666;margin-top:1px}
+.amtc{text-align:right;font-size:15px;color:#222;white-space:nowrap}
+.amtc small{display:block;font-size:12px;color:var(--mut)}
+.pb{height:5px;border-radius:3px;background:var(--lav2);margin-top:6px;overflow:hidden}
+.pb i{display:block;height:100%;background:var(--green);border-radius:3px}
+.pb i.warn{background:var(--or)} .pb i.over{background:var(--red)}
+.compact .row{min-height:48px;padding:7px 14px} .compact .pb{display:none} .compact .av{width:30px;height:30px;font-size:15px}
+.addrow{display:flex;align-items:center;gap:10px;padding:12px 14px;border-top:1px solid var(--line);color:var(--blue);font-weight:500}
+.empty{padding:22px 16px;text-align:center;color:var(--mut);font-size:14px;line-height:1.5}
+.empty button{margin-top:10px}
+
+/* bottom nav + fab */
+#nav{position:fixed;left:0;right:0;bottom:0;height:64px;background:#fff;border-top:1px solid var(--line);display:flex;z-index:10}
+#nav button{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:12.5px;color:#555}
+#nav button.on{color:var(--blue)}
+#nav .gap{flex:0.8}
+#fab{position:fixed;left:50%;bottom:38px;transform:translateX(-50%);width:54px;height:54px;border-radius:50%;background:#FFB627;color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 8px rgba(0,0,0,.25);z-index:11}
+#fab .ic{width:30px;height:30px}
+#fab:active{transform:translateX(-50%) scale(.94)}
+
+/* sheets (full screen pages) */
+.sheet{position:fixed;inset:0;background:#fff;z-index:30;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .22s ease}
+.sheet.in{transform:none}
+.sheet .sh{height:56px;flex:none;background:var(--or);color:#fff;display:flex;align-items:center;padding:0 6px;gap:4px}
+.sheet .sh h2{flex:1;margin:0;font-size:19px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sheet .sh .ib{width:44px;height:44px;display:flex;align-items:center;justify-content:center;border-radius:50%}
+.sheet .sh .act{padding:8px 12px;font-weight:600;letter-spacing:.3px}
+.sheet .sb{flex:1;overflow-y:auto;padding-bottom:30px}
+.pop{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:40;display:flex;align-items:flex-end;opacity:0;transition:opacity .18s}
+.pop.in{opacity:1}
+.pop .pc{background:#fff;width:100%;border-radius:16px 16px 0 0;padding:8px 0 18px;max-height:85%;overflow:auto;transform:translateY(30px);transition:transform .18s}
+.pop.in .pc{transform:none}
+.pop.dlg{align-items:center;justify-content:center;padding:24px}
+.pop.dlg .pc{border-radius:12px;padding:20px 20px 10px;max-width:360px}
+.pc h3{margin:6px 16px 10px;font-size:17px;font-weight:600}
+.pop.dlg .pc h3{margin:0 0 10px}
+.pc p{margin:0 0 14px;line-height:1.5;color:#444;font-size:14.5px}
+.dlgb{display:flex;justify-content:flex-end;gap:6px}
+.dlgb button{padding:10px 14px;color:var(--or2);font-weight:600;border-radius:6px}
+.dlgb button.danger{color:var(--red)}
+.opt{display:flex;align-items:center;gap:16px;padding:14px 20px;font-size:16px}
+.opt:active{background:#F5F5F5}
+.opt .ic{color:var(--mut)}
+
+/* forms */
+.form{padding:8px 16px}
+.fld{margin:12px 0}
+.fld label{display:block;font-size:12.5px;color:var(--mut);margin-bottom:4px;font-weight:500}
+.fld input,.fld select,.fld textarea{width:100%;border:0;border-bottom:1.5px solid #D5D3DE;padding:9px 2px;font-size:16px;background:transparent;outline:none;border-radius:0}
+.fld input:focus,.fld select:focus,.fld textarea:focus{border-bottom-color:var(--or)}
+.big input{font-size:30px;font-weight:500}
+.seg{display:flex;background:var(--lav);border-radius:10px;padding:4px;margin:10px 0}
+.seg button{flex:1;padding:9px 4px;border-radius:8px;font-weight:500;color:#555;font-size:14.5px}
+.seg button.on{background:#fff;color:var(--or2);box-shadow:0 1px 3px rgba(0,0,0,.1)}
+.chk{display:flex;align-items:center;gap:12px;margin:14px 0;font-size:15px}
+.chk input{width:20px;height:20px;accent-color:var(--or)}
+.btn{display:block;width:100%;padding:13px;border-radius:24px;background:var(--or);color:#fff;font-weight:600;font-size:15.5px;margin-top:16px;text-align:center}
+.btn.ghost{background:transparent;color:var(--red);border:1.5px solid #F2B8B5}
+.btn.sec2{background:var(--lav);color:var(--or2)}
+.hint{font-size:13px;color:var(--mut);margin-top:4px;line-height:1.4}
+.colors{display:flex;flex-wrap:wrap;gap:10px;margin-top:6px}
+.colors button{width:34px;height:34px;border-radius:50%;border:3px solid transparent}
+.colors button.on{border-color:#333}
+
+/* insight */
+.chartcard{padding:14px}
+.chartcard h4{margin:0 0 10px;font-size:15px;font-weight:600;color:#333}
+.donut{display:flex;align-items:center;justify-content:center;position:relative;margin:4px 0 10px}
+.donut .mid2{position:absolute;text-align:center}
+.donut .mid2 b{display:block;font-size:20px}
+.donut .mid2 small{color:var(--mut);font-size:12.5px}
+.leg{display:flex;align-items:center;gap:10px;padding:8px 2px;border-top:1px solid var(--line);font-size:14.5px}
+.leg i{width:12px;height:12px;border-radius:3px;flex:none}
+.leg .p{color:var(--mut);font-size:13px;width:48px;text-align:right}
+.leg .v{width:86px;text-align:right;white-space:nowrap}
+.leg span{white-space:nowrap}
+.bvb{margin:10px 0}
+.bvb .t{display:flex;justify-content:space-between;font-size:14px;margin-bottom:4px}
+.bvb .tr{height:10px;background:var(--lav2);border-radius:5px;overflow:hidden;position:relative}
+.bvb .tr i{position:absolute;left:0;top:0;bottom:0;border-radius:5px}
+.legend2{display:flex;gap:14px;font-size:12.5px;color:#555;margin-top:6px}
+.legend2 span{display:flex;align-items:center;gap:5px}
+.legend2 i{width:10px;height:10px;border-radius:2px}
+.stat2{display:flex;gap:8px;margin:8px}
+.stat2 .card{flex:1;margin:0;padding:12px}
+.stat2 small{font-size:12.5px;color:var(--mut)} .stat2 b{display:block;font-size:18px;font-weight:500;margin-top:3px}
+
+/* accounts */
+.nw{padding:16px;text-align:center}
+.nw small{color:var(--mut)} .nw b{display:block;font-size:28px;font-weight:500;margin-top:4px}
+.btnrow{display:flex;gap:8px;margin:0 8px}
+.btnrow .btn{margin-top:0;flex:1;padding:11px}
+
+/* I want to */
+.wgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:8px}
+.wgrid button{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px 12px;display:flex;flex-direction:column;align-items:flex-start;gap:10px;text-align:left;font-size:14.5px;font-weight:500;min-height:96px}
+.wgrid button:active{background:#F7F6FB}
+.wgrid .wi{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff}
+.wgrid .wi .ic{width:22px;height:22px}
+.wh{margin:14px 16px 2px;font-size:13px;font-weight:600;color:var(--mut);text-transform:uppercase;letter-spacing:.5px}
+
+/* drawer */
+#scrim{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:20;opacity:0;pointer-events:none;transition:opacity .2s}
+#scrim.on{opacity:1;pointer-events:auto}
+#drawer{position:fixed;top:0;bottom:0;left:0;width:290px;max-width:84%;background:#fff;z-index:21;transform:translateX(-100%);transition:transform .22s;overflow-y:auto}
+#drawer.on{transform:none}
+#drawer .dh{background:var(--or);color:#fff;padding:26px 18px 16px}
+#drawer .dh .logo{width:56px;height:56px;border-radius:16px;background:#fff;display:flex;align-items:center;justify-content:center;margin-bottom:12px}
+#drawer .dh b{font-size:19px} #drawer .dh small{display:block;opacity:.9;margin-top:3px}
+#drawer .di{display:flex;align-items:center;gap:20px;padding:13px 18px;font-size:15.5px;color:#333;width:100%;text-align:left}
+#drawer .di .ic{color:#666}
+#drawer .di.cur{color:var(--or2);background:#FFF5EC}
+#drawer .di.cur .ic{color:var(--or2)}
+#drawer hr{border:0;border-top:1px solid var(--line);margin:6px 0}
+#drawer .dl{padding:10px 18px 4px;font-size:12.5px;color:var(--mut);font-weight:600}
+
+/* misc */
+.txr .sub{font-size:13px}
+.daysep{padding:8px 14px;font-size:12.5px;color:var(--mut);background:#FAFAFC;border-top:1px solid var(--line);font-weight:500}
+.searchbox{display:flex;align-items:center;background:rgba(255,255,255,.22);border-radius:8px;flex:1;margin-right:8px}
+.searchbox input{flex:1;background:transparent;border:0;outline:none;color:#fff;padding:10px;font-size:16px}
+.searchbox input::placeholder{color:rgba(255,255,255,.8)}
+.goal{padding:14px;border-top:1px solid var(--line)}
+.goal:first-child{border-top:0}
+.goal .t{display:flex;justify-content:space-between;align-items:baseline}
+.goal .pb{height:9px;border-radius:5px}
+.toast{position:fixed;left:50%;bottom:92px;transform:translateX(-50%);background:#323232;color:#fff;padding:10px 16px;border-radius:20px;font-size:14px;z-index:60;opacity:0;transition:opacity .2s;max-width:86%;text-align:center}
+.toast.on{opacity:1}
+.calc{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:10px}
+.calc button{padding:12px 0;border-radius:10px;background:var(--lav);font-size:18px;font-weight:500}
+.calc button.op{color:var(--or2)}
+.calc button.eq{background:var(--or);color:#fff}
+</style>
+</head>
+<body>
+
+<div id="splash">
+  <div class="logo"><svg width="84" height="84" viewBox="20 20 68 68" id="logoSvg"></svg></div>
+  <div class="spin"></div>
+  <div class="name">iSaveMoney</div>
+</div>
+
+<header id="bar">
+  <button class="ib" id="menuBtn" aria-label="Menu"></button>
+  <button id="title"><span id="titleTxt"></span></button>
+  <button class="ib" id="searchBtn" aria-label="Search"></button>
+</header>
+
+<main>
+  <section class="view on" id="v-home"></section>
+  <section class="view" id="v-insight"></section>
+  <section class="view" id="v-accounts"></section>
+  <section class="view" id="v-want"></section>
+</main>
+
+<nav id="nav">
+  <button data-v="home" class="on"></button>
+  <button data-v="insight"></button>
+  <div class="gap"></div>
+  <button data-v="accounts"></button>
+  <button data-v="want"></button>
+</nav>
+<button id="fab" aria-label="Add"></button>
+
+<div id="scrim"></div>
+<aside id="drawer"></aside>
+
+<script>
+'use strict';
+/* ---------- icons ---------- */
+const P = {
+  menu:'M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z',
+  search:'M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z',
+  down:'M16.59 8.59 12 13.17 7.41 8.59 6 10l6 6 6-6z',
+  up:'M12 8l-6 6 1.41 1.41L12 10.83l4.59 4.58L18 14z',
+  home:'M12 5.69l5 4.5V18h-2v-6H9v6H7v-7.81l5-4.5M12 3 2 12h3v8h6v-6h2v6h6v-8h3L12 3z',
+  pie:'M11 2v20c-5.07-.5-9-4.79-9-10s3.93-9.5 9-10zm2.03 0v8.99H22c-.47-4.74-4.24-8.52-8.97-8.99zm0 11.01V22c4.74-.47 8.5-4.25 8.97-8.99h-8.97z',
+  wallet:'M21 18v1c0 1.1-.9 2-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14c1.1 0 2 .9 2 2v1h-9a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h9zm-9-2h10V8H12v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z',
+  want:'M3 18h12v-2H3v2zM3 6v2h18V6H3zm0 7h18v-2H3v2z',
+  add:'M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z',
+  sort:'M16 17.01V10h-2v7.01h-3L15 21l4-3.99h-3zM9 3 5 6.99h3V14h2V6.99h3L9 3z',
+  agenda:'M20 13H3c-.55 0-1 .45-1 1v6c0 .55.45 1 1 1h17c.55 0 1-.45 1-1v-6c0-.55-.45-1-1-1zm0-10H3c-.55 0-1 .45-1 1v6c0 .55.45 1 1 1h17c.55 0 1-.45 1-1V4c0-.55-.45-1-1-1z',
+  list:'M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z',
+  tune:'M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z',
+  hide:'M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.43-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46A11.804 11.804 0 0 0 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm4.31-.78 3.15 3.15.02-.16c0-1.66-1.34-3-3-3l-.17.01z',
+  show:'M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z',
+  info:'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z',
+  close:'M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z',
+  back:'M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z',
+  swap:'M6.99 11 3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z',
+  inc:'m16 6 2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z',
+  exp:'m16 18 2.29-2.29-4.88-4.88-4 4L2 7.41 3.41 6l6 6 4-4 6.3 6.29L22 12v6z',
+  event:'M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19a2 2 0 0 0 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z',
+  copy:'M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z',
+  edit:'M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a.996.996 0 0 0 0-1.41l-2.34-2.34a.996.996 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z',
+  cat:'M12 2l-5.5 9h11zM17.5 13a4.5 4.5 0 1 0 0 9 4.5 4.5 0 0 0 0-9zM3 13.5h8v8H3z',
+  repeat:'M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z',
+  flag:'M14.4 6 14 4H5v17h2v-7h5.6l.4 2h7V6z',
+  dl:'M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z',
+  backup:'M19.35 10.04A7.49 7.49 0 0 0 12 4C9.11 4 6.6 5.64 5.35 8.04A5.994 5.994 0 0 0 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z',
+  restore:'M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.954 8.954 0 0 0 13 21a9 9 0 0 0 0-18zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z',
+  gear:'M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z',
+  del:'M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z',
+  right:'M10 6 8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z',
+  flask:'M7 2v2h1v14a4 4 0 0 0 8 0V4h1V2H7zm4 14c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm2-4c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm1-5h-4V4h4v3z',
+  bank:'M4 10v7h3v-7H4zm6 0v7h3v-7h-3zM2 22h19v-3H2v3zm14-12v7h3v-7h-3zm-4.5-9L2 6v2h19V6l-9.5-5z',
+  check:'M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z',
+  calc:'M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5.97 4.06L14.09 6l1.41 1.41L16.91 6l1.06 1.06-1.41 1.41 1.41 1.41-1.06 1.06-1.41-1.4-1.41 1.41-1.06-1.06 1.41-1.41-1.41-1.42zm-6.78.66h5v1.5h-5v-1.5zM11.5 16h-2v2H8v-2H6v-1.5h2v-2h1.5v2h2V16zm6.5 1.25h-5v-1.5h5v1.5zm0-2.5h-5v-1.5h5v1.5z',
+  trash2:'M15 16h4v2h-4zm0-8h7v2h-7zm0 4h6v2h-6zM3 18c0 1.1.9 2 2 2h6c1.1 0 2-.9 2-2V8H3v10zM14 5h-3l-1-1H6L5 5H2v2h12z'
+};
+const ic = (n, cls) => `<svg class="ic ${cls||''}" viewBox="0 0 24 24"><path d="${P[n]}"/></svg>`;
+const LOGO = `<path fill="#2CA6E8" d="M58,30 h20 a2,2 0 0 1 2,2 v8 h-24 v-8 a2,2 0 0 1 2,-2z"/><path fill="#7FD0F5" d="M62,27 h14 a2,2 0 0 1 2,2 v4 h-18 v-4 a2,2 0 0 1 2,-2z"/><path fill="#FFA43A" d="M30,38 h44 a6,6 0 0 1 6,6 v28 a6,6 0 0 1 -6,6 h-44 a6,6 0 0 1 -6,-6 v-28 a6,6 0 0 1 6,-6z"/><path fill="#FF8A1E" d="M64,48 h18 a4,4 0 0 1 4,4 v10 a4,4 0 0 1 -4,4 h-18z"/><circle fill="#fff" cx="72" cy="57" r="3.5"/><path fill="#2CA6E8" d="M31,43 h24 v6 h-24z"/><path fill="#fff" d="M33,53 h5 v4 h-5z M42,53 h5 v4 h-5z M51,53 h5 v4 h-5z M33,60 h5 v4 h-5z M42,60 h5 v4 h-5z M51,60 h5 v4 h-5z M33,67 h5 v4 h-5z M42,67 h5 v4 h-5z M51,67 h5 v4 h-5z"/>`;
+
+/* ---------- helpers ---------- */
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const r2 = n => Math.round((+n || 0) * 100) / 100;
+const sum = (a, f) => r2(a.reduce((t, x) => t + (f ? f(x) : x), 0));
+const pad = n => String(n).padStart(2, '0');
+const iso = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const pd = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+const today = () => iso(new Date());
+const addDays = (s, n) => { const d = pd(s); d.setDate(d.getDate() + n); return iso(d); };
+const daysBetween = (a, b) => Math.round((pd(b) - pd(a)) / 864e5);
+const MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const monthEnd = (y, m) => new Date(y, m + 1, 0).getDate();
+function addMonths(s, n, day) {
+  const d = pd(s); const want = day || d.getDate();
+  const t = new Date(d.getFullYear(), d.getMonth() + n, 1);
+  t.setDate(Math.min(want, monthEnd(t.getFullYear(), t.getMonth())));
+  return iso(t);
+}
+function monthRange(s) { const d = pd(s); return [iso(new Date(d.getFullYear(), d.getMonth(), 1)), iso(new Date(d.getFullYear(), d.getMonth() + 1, 0))]; }
+function nice(s) { const d = pd(s); return `${MON[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`; }
+function shortD(s) { const d = pd(s); return `${MON[d.getMonth()]} ${d.getDate()}`; }
+function fmt(n) {
+  n = r2(n);
+  const s = Math.abs(n).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+  return (n < 0 ? '-' : '') + S.currency + s;
+}
+function money(v) {
+  // Accepts "12.50", "1,200", or a simple sum like "12+8.5*2".
+  v = String(v || '').replace(/,/g, '').replace(/[^\d.+\-*/() ]/g, '').trim();
+  if (!v) return NaN;
+  if (!/^[\d.+\-*/() ]+$/.test(v)) return NaN;
+  try { const n = Function('"use strict";return (' + v + ')')(); return isFinite(n) ? r2(n) : NaN; } catch (e) { return NaN; }
+}
+const AVC = ['#4FC3F7','#E57373','#81C784','#FF9800','#BA68C8','#4DB6AC','#F06292','#7986CB','#FFB74D','#A1887F','#90A4AE','#AED581'];
+function avColor(name) { let h = 0; for (const c of String(name)) h = (h * 31 + c.charCodeAt(0)) | 0; return AVC[Math.abs(h) % AVC.length]; }
+function av(name, color) {
+  const n = String(name || '').trim();
+  const L = n ? n[0].toUpperCase() : '?';
+  return `<div class="av" style="background:${color || (n ? avColor(n) : '#4FC3F7')}">${esc(L)}</div>`;
+}
+function toast(msg) {
+  let t = $('.toast'); if (!t) { t = document.createElement('div'); t.className = 'toast'; document.body.appendChild(t); }
+  t.textContent = msg; t.classList.add('on'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('on'), 2200);
+}
+
+/* ---------- state ---------- */
+const KEY = 'isavemoney_v1';
+const CAT_COLORS = ['#EF5350','#AB47BC','#5C6BC0','#29B6F6','#26A69A','#66BB6A','#D4E157','#FFCA28','#FFA726','#8D6E63','#78909C','#EC407A'];
+const DEFAULT_CATS = ['Rent / Mortgage','Groceries','Utilities','Phone & Internet','Transportation','Dining Out','Entertainment','Subscriptions','Health','Shopping','Insurance','Personal Care','Debt Payments','Gifts & Donations','Miscellaneous'];
+let S;
+function fresh() {
+  return {
+    v: 1, currency: '$',
+    cats: DEFAULT_CATS.map((n, i) => ({id: uid() + i, name: n, color: CAT_COLORS[i % CAT_COLORS.length], def: 0})),
+    accounts: [{id: 'acc-checking', name: 'Checking', type: 'Bank', open: 0}, {id: 'acc-cash', name: 'Cash', type: 'Cash', open: 0}],
+    budgets: [], tx: [], rec: [], goals: [],
+    ui: {sort: 'amount', compact: false, showEmpty: false, openInc: true, openExp: true, acct: '', defAcct: 'acc-checking'},
+    cur: null
+  };
+}
+function load() {
+  try { S = JSON.parse(localStorage.getItem(KEY)); } catch (e) { S = null; }
+  if (!S || !S.v) S = fresh();
+  const f = fresh();
+  for (const k of Object.keys(f)) if (S[k] == null) S[k] = f[k];
+  S.ui = Object.assign(f.ui, S.ui);
+  ensureBudget();
+}
+function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { toast('Could not save on this device'); } }
+function ensureBudget() {
+  const t = today();
+  if (!S.budgets.length) {
+    const [a, b] = monthRange(t);
+    S.budgets.push({id: uid(), name: '', start: a, end: b, limits: defLimits()});
+  }
+  // Open the budget that covers today; otherwise keep the chosen one; otherwise the latest.
+  const cover = S.budgets.filter(b => b.start <= t && b.end >= t).sort((x, y) => y.start.localeCompare(x.start))[0];
+  if (!S._picked && cover) S.cur = cover.id;
+  if (!S.budgets.find(b => b.id === S.cur)) S.cur = (cover || latest()).id;
+}
+function defLimits() { const o = {}; for (const c of S.cats) if (c.def > 0) o[c.id] = c.def; return o; }
+const latest = () => S.budgets.slice().sort((a, b) => b.start.localeCompare(a.start))[0];
+const B = () => S.budgets.find(b => b.id === S.cur);
+const cat = id => S.cats.find(c => c.id === id);
+const acct = id => S.accounts.find(a => a.id === id);
+const catName = id => (cat(id) || {name: 'Uncategorized'}).name;
+const acctName = id => (acct(id) || {name: '—'}).name;
+function label(b) {
+  const a = pd(b.start), e = pd(b.end);
+  if (b.name) return b.name;
+  if (a.getFullYear() === e.getFullYear()) {
+    if (a.getMonth() === e.getMonth()) return `${MON[a.getMonth()]} ${a.getDate()} - ${e.getDate()}, ${a.getFullYear()}`;
+    return `${MON[a.getMonth()]} ${a.getDate()} - ${MON[e.getMonth()]} ${e.getDate()}, ${a.getFullYear()}`;
+  }
+  return `${shortD(b.start)}, ${a.getFullYear()} - ${shortD(b.end)}, ${e.getFullYear()}`;
+}
+function calc(b, accFilter) {
+  const t = S.tx.filter(x => x.date >= b.start && x.date <= b.end && (!accFilter || x.acct === accFilter));
+  const inc = t.filter(x => x.type === 'income'), exp = t.filter(x => x.type === 'expense');
+  const income = sum(inc, x => x.amt), spent = sum(exp, x => x.amt);
+  const budgeted = sum(Object.values(b.limits || {}));
+  const by = {}; for (const x of exp) by[x.cat || ''] = r2((by[x.cat || ''] || 0) + x.amt);
+  return {inc, exp, income, spent, budgeted, by, saving: r2(income - spent), prov: r2(income - budgeted), remain: r2(budgeted - spent)};
+}
+
+/* ---------- recurring ---------- */
+const FREQ = {weekly: 'Every week', biweekly: 'Every 2 weeks', monthly: 'Every month', quarterly: 'Every 3 months', yearly: 'Every year'};
+function nextDate(r, s) {
+  if (r.freq === 'weekly') return addDays(s, 7);
+  if (r.freq === 'biweekly') return addDays(s, 14);
+  if (r.freq === 'monthly') return addMonths(s, 1, r.day);
+  if (r.freq === 'quarterly') return addMonths(s, 3, r.day);
+  return addMonths(s, 12, r.day);
+}
+function runRecurring() {
+  const t = today(); let n = 0;
+  for (const r of S.rec) {
+    let guard = 0;
+    while (r.next <= t && guard++ < 500) {
+      S.tx.push(Object.assign({}, r.tpl, {id: uid(), date: r.next, rec: r.id}));
+      r.next = nextDate(r, r.next); n++;
+    }
+  }
+  if (n) { save(); toast(`${n} recurring transaction${n > 1 ? 's' : ''} added`); }
+}
+
+/* ---------- sheets / dialogs ---------- */
+const stack = [];
+function sheet(title, body, o = {}) {
+  const el = document.createElement('div'); el.className = 'sheet';
+  el.innerHTML = `<div class="sh"><button class="ib" data-x>${ic('back')}</button><h2>${esc(title)}</h2>${o.head || ''}${o.action ? `<button class="act" data-act>${esc(o.action)}</button>` : ''}</div><div class="sb">${body}</div>`;
+  document.body.appendChild(el);
+  requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('in')));
+  const rec = {el, close: () => closeTop(), onClose: o.onClose};
+  stack.push(rec);
+  el.querySelector('[data-x]').onclick = () => closeTop();
+  if (o.action) el.querySelector('[data-act]').onclick = () => o.onAction(el);
+  if (o.mount) o.mount(el);
+  return el;
+}
+function pop(html, o = {}) {
+  const el = document.createElement('div'); el.className = 'pop' + (o.dlg ? ' dlg' : '');
+  el.innerHTML = `<div class="pc">${html}</div>`;
+  document.body.appendChild(el);
+  requestAnimationFrame(() => el.classList.add('in'));
+  stack.push({el, isPop: true, onClose: o.onClose});
+  el.addEventListener('click', e => { if (e.target === el) closeTop(); });
+  if (o.mount) o.mount(el);
+  return el;
+}
+function closeTop() {
+  const r = stack.pop(); if (!r) return;
+  r.el.classList.remove('in');
+  setTimeout(() => r.el.remove(), 230);
+  if (r.onClose) r.onClose();
+}
+function closeAll() { while (stack.length) closeTop(); }
+function ask(title, msg, ok = 'OK', danger) {
+  return new Promise(res => {
+    let done = false;
+    const el = pop(`<h3>${esc(title)}</h3><p>${msg}</p><div class="dlgb"><button data-n>Cancel</button><button data-y class="${danger ? 'danger' : ''}">${esc(ok)}</button></div>`,
+      {dlg: true, onClose: () => { if (!done) res(false); }});
+    el.querySelector('[data-n]').onclick = () => closeTop();
+    el.querySelector('[data-y]').onclick = () => { done = true; closeTop(); res(true); };
+  });
+}
+function info(title, msg) {
+  const el = pop(`<h3>${esc(title)}</h3><p>${msg}</p><div class="dlgb"><button data-y>Got it</button></div>`, {dlg: true});
+  el.querySelector('[data-y]').onclick = () => closeTop();
+}
+function choose(title, opts) {
+  const el = pop(`<h3>${esc(title)}</h3>` + opts.map((o, i) => `<button class="opt" style="width:100%" data-i="${i}">${o.icon ? ic(o.icon) : ''}<span>${esc(o.label)}</span></button>`).join(''));
+  el.querySelectorAll('[data-i]').forEach(b => b.onclick = () => { closeTop(); setTimeout(opts[+b.dataset.i].fn, 60); });
+}
+window.appBack = function () {
+  if (stack.length) { closeTop(); return true; }
+  if ($('#drawer').classList.contains('on')) { drawer(false); return true; }
+  if (view !== 'home') { go('home'); return true; }
+  return false;
+};
+
+/* ---------- navigation ---------- */
+let view = 'home';
+const NAV = {home: ['home', 'Home'], insight: ['pie', 'Insight'], accounts: ['wallet', 'Accounts'], want: ['want', 'I want to...']};
+function go(v) {
+  view = v;
+  document.querySelectorAll('.view').forEach(s => s.classList.toggle('on', s.id === 'v-' + v));
+  document.querySelectorAll('#nav button').forEach(b => b.classList.toggle('on', b.dataset.v === v));
+  render(); window.scrollTo(0, 0);
+}
+function drawer(on) { $('#drawer').classList.toggle('on', on); $('#scrim').classList.toggle('on', on); if (on) renderDrawer(); }
+
+function render() {
+  const b = B();
+  $('#titleTxt').textContent = view === 'accounts' ? 'Accounts' : view === 'want' ? 'I want to...' : label(b);
+  $('#title').innerHTML = `<span id="titleTxt">${esc($('#titleTxt').textContent)}</span>` + (view === 'home' || view === 'insight' ? ic('down') : '');
+  if (view === 'home') renderHome();
+  else if (view === 'insight') renderInsight();
+  else if (view === 'accounts') renderAccounts();
+  else renderWant();
+}
+
+/* ---------- HOME ---------- */
+function gauge(p, over) {
+  const f = Math.max(0, Math.min(100, p));
+  return `<svg viewBox="0 0 200 112" width="200" height="112">
+    <path d="M22 100 A78 78 0 0 1 178 100" fill="none" stroke="#E4E2F2" stroke-width="28"/>
+    <path d="M22 100 A78 78 0 0 1 178 100" fill="none" stroke="${over ? '#E53935' : '#8BC34A'}" stroke-width="28" pathLength="100" stroke-dasharray="${f} 100"/>
+  </svg>`;
+}
+function renderHome() {
+  const b = B(), c = calc(b, S.ui.acct), t = today();
+  const spentPct = c.income > 0 ? c.spent / c.income * 100 : (c.spent > 0 ? 100 : 0);
+  const budPct = c.budgeted > 0 ? c.spent / c.budgeted * 100 : 0;
+  const over = c.saving < 0;
+  let h = '';
+  if (t > b.end && b.id === latest().id) h += `<div class="ended">${ic('event')}<span>This budget ended ${shortD(b.end)}.</span><button onclick="startNext()">Start next</button></div>`;
+  h += `<div class="card sum">
+    <div class="top"><div><b class="blue">${fmt(c.income)}</b><small>Net disposable income</small></div><div class="r"><b class="blue">${fmt(c.spent)}</b><small>Total expenditure</small></div></div>
+    <div class="gauge">${gauge(spentPct, over)}<div class="gl"><span>${over ? 'Overspent' : 'Saving'}</span><b class="${over ? 'red' : 'green'}">${fmt(Math.abs(c.saving))}</b></div></div>
+    <div class="pct">${c.income > 0 ? spentPct.toFixed(2) + '% of income spent' : 'No income recorded yet'}</div>
+    <div class="row3">
+      <div><small>Total budgeted</small><b class="blue">${fmt(c.budgeted)}</b></div>
+      <div><small onclick="provInfo()">${ic('info')}Provisional Balance</small><b class="${c.prov < 0 ? 'blue' : 'blue'}">${fmt(c.prov)}</b></div>
+      <div><small>Remaining to spend</small><b class="${c.remain < 0 ? 'red' : 'blue'}">${fmt(c.remain)}</b></div>
+    </div>
+    <div class="sbar"><div class="fill ${budPct > 100 ? 'over' : ''}" style="width:${Math.min(100, budPct)}%"></div><span class="lbl">Budget Spent</span><span class="bp">${budPct.toFixed(2)} %</span></div>
+  </div>`;
+  const filtOn = !!S.ui.acct;
+  h += `<div class="tools">
+    <button class="tb" onclick="cycleSort()" aria-label="Sort">${ic('sort')}</button>
+    <button class="tb view" onclick="toggleCompact()" aria-label="View">${ic(S.ui.compact ? 'list' : 'agenda')}</button>
+    <button class="filt ${filtOn ? 'act' : ''}" onclick="openFilter()">${ic('tune')}Filter</button>
+    <button class="tb hide ${S.ui.showEmpty ? '' : 'on'}" onclick="toggleEmpty()" aria-label="Hide empty">${ic(S.ui.showEmpty ? 'show' : 'hide')}</button>
+  </div>`;
+
+  // income grouped by payee
+  const groups = {};
+  for (const x of c.inc) { const k = (x.payee || '').trim(); (groups[k] = groups[k] || []).push(x); }
+  let gl = Object.entries(groups).map(([k, a]) => ({k, a, tot: sum(a, x => x.amt), last: a.reduce((m, x) => x.date > m ? x.date : m, '')}));
+  gl = sortRows(gl, g => g.k || '?', g => g.tot, g => g.last);
+  h += `<div class="sec ${S.ui.compact ? 'compact' : ''}"><div class="sech" onclick="toggleSec('openInc')"><span>Net Disposable Income</span><span class="amt">${fmt(c.income)}${ic(S.ui.openInc ? 'up' : 'down')}</span></div>`;
+  if (S.ui.openInc) {
+    h += gl.map(g => `<div class="row" onclick="openIncomeGroup(${esc(JSON.stringify(g.k))})">${av(g.k)}<div class="mid"><div class="nm">${esc(g.k || '?')}</div><div class="sub">Income${g.a.length > 1 ? ` · ${g.a.length} entries` : ''}</div></div><div class="amtc">${fmt(g.tot)}</div></div>`).join('');
+    if (!gl.length) h += `<div class="empty">No income in this budget yet.</div>`;
+    h += `<button class="addrow" style="width:100%" onclick="txForm({type:'income'})">${ic('add')}Add income</button>`;
+  }
+  h += `</div>`;
+
+  // expense categories
+  let rows = S.cats.map(k => ({k, lim: r2((b.limits || {})[k.id] || 0), sp: c.by[k.id] || 0}));
+  if (c.by['']) rows.push({k: {id: '', name: 'Uncategorized', color: '#9E9E9E'}, lim: 0, sp: c.by['']});
+  if (!S.ui.showEmpty) rows = rows.filter(r => r.lim > 0 || r.sp > 0);
+  rows = sortRows(rows, r => r.k.name, r => Math.max(r.lim, r.sp), r => lastExpDate(c.exp, r.k.id));
+  h += `<div class="sec ${S.ui.compact ? 'compact' : ''}"><div class="sech" onclick="toggleSec('openExp')"><span>Expenses</span><span class="amt">${fmt(c.spent)}${ic(S.ui.openExp ? 'up' : 'down')}</span></div>`;
+  if (S.ui.openExp) {
+    h += rows.map(r => {
+      const p = r.lim > 0 ? r.sp / r.lim * 100 : (r.sp > 0 ? 100 : 0);
+      const left = r2(r.lim - r.sp);
+      return `<div class="row" onclick="openCat('${r.k.id}')">${av(r.k.name, r.k.color)}<div class="mid"><div class="nm">${esc(r.k.name)}</div><div class="sub">${fmt(r.sp)} of ${fmt(r.lim)}</div><div class="pb"><i class="${p > 100 ? 'over' : p > 85 ? 'warn' : ''}" style="width:${Math.min(100, p)}%"></i></div></div><div class="amtc ${left < 0 ? 'red' : ''}">${fmt(Math.abs(left))}<small>${left < 0 ? 'over' : 'left'}</small></div></div>`;
+    }).join('');
+    if (!rows.length) h += `<div class="empty">No budgeted categories yet.<br>Give each category a spending limit for this period.<br><button class="btn" onclick="setBudgets()">Set my budgets</button><button class="btn sec2" onclick="loadSample()">Try it with sample data</button></div>`;
+    h += `<button class="addrow" style="width:100%" onclick="txForm({type:'expense'})">${ic('add')}Add expense</button>`;
+  }
+  h += `</div>`;
+  $('#v-home').innerHTML = h;
+}
+function lastExpDate(exp, id) { let m = ''; for (const x of exp) if ((x.cat || '') === id && x.date > m) m = x.date; return m; }
+function sortRows(a, nameF, amtF, dateF) {
+  const s = S.ui.sort;
+  return a.sort((x, y) => s === 'name' ? nameF(x).localeCompare(nameF(y)) : s === 'recent' ? dateF(y).localeCompare(dateF(x)) : amtF(y) - amtF(x));
+}
+window.cycleSort = () => { S.ui.sort = {amount: 'name', name: 'recent', recent: 'amount'}[S.ui.sort]; save(); render(); toast('Sorted by ' + {amount: 'amount', name: 'name', recent: 'most recent'}[S.ui.sort]); };
+window.toggleCompact = () => { S.ui.compact = !S.ui.compact; save(); render(); };
+window.toggleEmpty = () => { S.ui.showEmpty = !S.ui.showEmpty; save(); render(); toast(S.ui.showEmpty ? 'Showing every category' : 'Hiding categories with no budget or spending'); };
+window.toggleSec = k => { S.ui[k] = !S.ui[k]; save(); render(); };
+window.provInfo = () => info('Provisional Balance', 'Your net disposable income minus everything you have budgeted for this period.<br><br>If it is negative, you have planned to spend more than you have coming in. Lower some budgets or add income to bring it back to zero or above.');
+window.openFilter = () => {
+  const el = pop(`<h3>Filter</h3><div class="form">
+    <div class="fld"><label>Account</label><select id="fAcc"><option value="">All accounts</option>${S.accounts.map(a => `<option value="${a.id}" ${S.ui.acct === a.id ? 'selected' : ''}>${esc(a.name)}</option>`).join('')}</select></div>
+    <label class="chk"><input type="checkbox" id="fEmpty" ${S.ui.showEmpty ? 'checked' : ''}>Show categories with no budget or spending</label>
+    <div class="fld"><label>Sort by</label><select id="fSort">${['amount', 'name', 'recent'].map(s => `<option value="${s}" ${S.ui.sort === s ? 'selected' : ''}>${{amount: 'Amount', name: 'Name', recent: 'Most recent'}[s]}</option>`).join('')}</select></div>
+    <button class="btn" id="fApply">Apply</button><button class="btn sec2" id="fClear">Clear filter</button></div>`);
+  el.querySelector('#fApply').onclick = () => { S.ui.acct = el.querySelector('#fAcc').value; S.ui.showEmpty = el.querySelector('#fEmpty').checked; S.ui.sort = el.querySelector('#fSort').value; save(); closeTop(); render(); };
+  el.querySelector('#fClear').onclick = () => { S.ui.acct = ''; save(); closeTop(); render(); };
+};
+
+/* ---------- transactions ---------- */
+function txRow(x, showDate = true) {
+  const isT = x.type === 'transfer';
+  const nm = isT ? `${acctName(x.acct)} → ${acctName(x.to)}` : (x.payee || (x.type === 'income' ? '?' : catName(x.cat)));
+  const sub = isT ? 'Transfer' : x.type === 'income' ? `Income · ${acctName(x.acct)}` : `${catName(x.cat)} · ${acctName(x.acct)}`;
+  const color = isT ? '#78909C' : x.type === 'expense' ? (cat(x.cat) || {}).color : null;
+  const amt = isT ? fmt(x.amt) : x.type === 'income' ? '+' + fmt(x.amt) : '-' + fmt(x.amt);
+  return `<div class="row txr" onclick="editTx('${x.id}')">${isT ? `<div class="av" style="background:#78909C">${ic('swap')}</div>` : av(x.payee || (x.type === 'expense' ? catName(x.cat) : ''), color)}<div class="mid"><div class="nm">${esc(nm)}${x.rec ? ' ' + ic('repeat', 'mut').replace('class="ic', 'style="width:14px;height:14px;display:inline;vertical-align:-2px" class="ic') : ''}</div><div class="sub">${esc(sub)}${showDate ? ' · ' + shortD(x.date) : ''}${x.note ? ' · ' + esc(x.note) : ''}</div></div><div class="amtc ${x.type === 'income' ? 'green' : ''}">${amt}</div></div>`;
+}
+function txList(list, empty) {
+  if (!list.length) return `<div class="empty">${empty || 'Nothing here yet.'}</div>`;
+  list = list.slice().sort((a, b) => b.date.localeCompare(a.date) || (b.ts || 0) - (a.ts || 0));
+  let h = '', last = '';
+  for (const x of list) { if (x.date !== last) { h += `<div class="daysep">${nice(x.date)}</div>`; last = x.date; } h += txRow(x, false); }
+  return h;
+}
+window.editTx = id => { const x = S.tx.find(t => t.id === id); if (x) txForm(x); };
+function payees(type) {
+  const m = {}; for (const x of S.tx) if (x.payee && x.type === type) m[x.payee] = (m[x.payee] || 0) + 1;
+  return Object.keys(m).sort((a, b) => m[b] - m[a]).slice(0, 60);
+}
+function txForm(x0) {
+  const isNew = !x0.id;
+  const x = Object.assign({type: 'expense', amt: '', date: defaultDate(), payee: '', cat: '', acct: S.ui.defAcct || (S.accounts[0] || {}).id, to: '', note: ''}, x0);
+  if (x.type === 'expense' && !x.cat && isNew) x.cat = x0.cat || '';
+  const rule = x.rec ? S.rec.find(r => r.id === x.rec) : null;
+  const accOpts = sel => S.accounts.map(a => `<option value="${a.id}" ${sel === a.id ? 'selected' : ''}>${esc(a.name)}</option>`).join('');
+  const body = `<div class="form">
+    <div class="seg" id="tType">${['expense', 'income', 'transfer'].map(t => `<button data-t="${t}" class="${x.type === t ? 'on' : ''}">${t[0].toUpperCase() + t.slice(1)}</button>`).join('')}</div>
+    <div class="fld big"><label>Amount (${esc(S.currency)})</label><div style="display:flex;align-items:center;gap:8px"><input id="tAmt" inputmode="decimal" placeholder="0.00" value="${x.amt === '' ? '' : r2(x.amt)}" autocomplete="off"><button id="tCalc" aria-label="Calculator" style="color:var(--or2)">${ic('calc')}</button></div><div class="calc hidden" id="tPad"></div></div>
+    <div class="fld" id="wPayee"><label id="lPayee">Payee</label><input id="tPayee" list="pl" value="${esc(x.payee)}" autocomplete="off" placeholder="Who was it?"><datalist id="pl"></datalist></div>
+    <div class="fld" id="wCat"><label>Category</label><select id="tCat"><option value="">Uncategorized</option>${S.cats.map(c => `<option value="${c.id}" ${x.cat === c.id ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}<option value="__new">+ New category…</option></select></div>
+    <div class="fld"><label id="lAcc">Account</label><select id="tAcc">${accOpts(x.acct)}</select></div>
+    <div class="fld" id="wTo"><label>To account</label><select id="tTo">${accOpts(x.to || (S.accounts.find(a => a.id !== x.acct) || {}).id)}</select></div>
+    <div class="fld"><label>Date</label><input type="date" id="tDate" value="${x.date}"></div>
+    <div class="fld"><label>Note</label><input id="tNote" value="${esc(x.note)}" placeholder="Optional"></div>
+    <div class="fld"><label>Repeat</label><select id="tRep"><option value="">Never</option>${Object.entries(FREQ).map(([k, v]) => `<option value="${k}" ${rule && rule.freq === k ? 'selected' : ''}>${v}</option>`).join('')}</select>${rule ? `<div class="hint">Repeats ${FREQ[rule.freq].toLowerCase()}, next on ${nice(rule.next)}.</div>` : ''}</div>
+    <button class="btn" id="tSave">${isNew ? 'Save' : 'Save changes'}</button>
+    ${isNew ? `<button class="btn sec2" id="tSaveMore">Save and add another</button>` : `<button class="btn ghost" id="tDel">Delete</button>`}
+  </div>`;
+  sheet(isNew ? 'New transaction' : 'Edit transaction', body, {
+    action: 'SAVE', onAction: el => el.querySelector('#tSave').click(),
+    mount: el => {
+      const q = s => el.querySelector(s);
+      let type = x.type;
+      const sync = () => {
+        q('#tType').querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.t === type));
+        q('#wCat').classList.toggle('hidden', type !== 'expense');
+        q('#wTo').classList.toggle('hidden', type !== 'transfer');
+        q('#wPayee').classList.toggle('hidden', type === 'transfer');
+        q('#lPayee').textContent = type === 'income' ? 'Income source (who paid you)' : 'Payee';
+        q('#lAcc').textContent = type === 'transfer' ? 'From account' : type === 'income' ? 'Paid into account' : 'Paid from account';
+        q('#pl').innerHTML = payees(type).map(p => `<option value="${esc(p)}">`).join('');
+      };
+      q('#tType').onclick = e => { const b = e.target.closest('button'); if (b) { type = b.dataset.t; sync(); } };
+      sync();
+      // Picking a known payee fills in the category it was last used with.
+      q('#tPayee').addEventListener('change', () => {
+        if (type !== 'expense' || q('#tCat').value) return;
+        const prev = S.tx.filter(t => t.payee === q('#tPayee').value && t.type === 'expense').sort((a, b) => b.date.localeCompare(a.date))[0];
+        if (prev && prev.cat) q('#tCat').value = prev.cat;
+      });
+      q('#tCat').onchange = () => {
+        if (q('#tCat').value !== '__new') return;
+        q('#tCat').value = '';
+        catForm({}, c => { const o = document.createElement('option'); o.value = c.id; o.textContent = c.name; q('#tCat').insertBefore(o, q('#tCat').lastElementChild); q('#tCat').value = c.id; });
+      };
+      // calculator pad
+      const pad = q('#tPad');
+      pad.innerHTML = ['7', '8', '9', '/', '4', '5', '6', '*', '1', '2', '3', '-', '.', '0', 'C', '+', '⌫', '(', ')', '='].map(k => `<button class="${/[\/*\-+()]/.test(k) ? 'op' : k === '=' ? 'eq' : ''}" data-k="${k}">${k === '*' ? '×' : k === '/' ? '÷' : k}</button>`).join('');
+      q('#tCalc').onclick = () => pad.classList.toggle('hidden');
+      pad.onclick = e => {
+        const b = e.target.closest('button'); if (!b) return;
+        const k = b.dataset.k, inp = q('#tAmt');
+        if (k === 'C') inp.value = '';
+        else if (k === '⌫') inp.value = inp.value.slice(0, -1);
+        else if (k === '=') { const v = money(inp.value); inp.value = isNaN(v) ? '' : v; }
+        else inp.value += k;
+      };
+      if (isNew) setTimeout(() => q('#tAmt').focus(), 280);
+      const doSave = more => {
+        const amt = money(q('#tAmt').value);
+        if (!(amt > 0)) { toast('Enter an amount'); q('#tAmt').focus(); return; }
+        const date = q('#tDate').value || today();
+        const acc = q('#tAcc').value, to = q('#tTo').value;
+        if (type === 'transfer' && acc === to) { toast('Pick two different accounts'); return; }
+        const rec = {
+          id: x.id || uid(), ts: x.ts || Date.now(), type, amt, date, acct: acc,
+          payee: type === 'transfer' ? '' : q('#tPayee').value.trim(),
+          cat: type === 'expense' ? (q('#tCat').value === '__new' ? '' : q('#tCat').value) : '',
+          to: type === 'transfer' ? to : '', note: q('#tNote').value.trim(), rec: x.rec || ''
+        };
+        // repeat rules
+        const freq = q('#tRep').value;
+        const tpl = {type, amt, acct: acc, payee: rec.payee, cat: rec.cat, to: rec.to, note: rec.note};
+        if (freq) {
+          let r = rule;
+          if (!r) { r = {id: uid()}; S.rec.push(r); rec.rec = r.id; }
+          r.freq = freq; r.tpl = tpl; r.day = pd(date).getDate();
+          if (!rule || rule.freq !== freq || !r.next) r.next = nextDate(r, date);
+        } else if (rule) { S.rec = S.rec.filter(r => r.id !== rule.id); rec.rec = ''; }
+        const i = S.tx.findIndex(t => t.id === rec.id);
+        if (i >= 0) S.tx[i] = rec; else S.tx.push(rec);
+        if (acc) S.ui.defAcct = acc;
+        save(); runRecurring();
+        if (more) {
+          toast('Saved'); q('#tAmt').value = ''; q('#tPayee').value = ''; q('#tNote').value = ''; q('#tRep').value = ''; x.id = null; q('#tAmt').focus();
+          sync();
+        } else { closeTop(); }
+        refresh();
+      };
+      q('#tSave').onclick = () => doSave(false);
+      if (q('#tSaveMore')) q('#tSaveMore').onclick = () => doSave(true);
+      if (q('#tDel')) q('#tDel').onclick = async () => {
+        if (!await ask('Delete transaction?', `${esc(x.payee || catName(x.cat))} · ${fmt(x.amt)} on ${nice(x.date)}`, 'Delete', true)) return;
+        S.tx = S.tx.filter(t => t.id !== x.id);
+        if (rule && await ask('Stop repeating too?', `This came from a rule that repeats ${FREQ[rule.freq].toLowerCase()}.`, 'Stop repeating', true)) S.rec = S.rec.filter(r => r.id !== rule.id);
+        save(); closeTop(); refresh(); toast('Deleted');
+      };
+    }
+  });
+}
+function defaultDate() { const b = B(), t = today(); return (t >= b.start && t <= b.end) ? t : b.start; }
+// Re-render whatever is visible, including open detail sheets.
+function refresh() {
+  render();
+  for (const s of stack) if (s.el._refresh) s.el._refresh();
+}
+
+/* income group + category detail */
+window.openIncomeGroup = k => {
+  const b = B();
+  const el = sheet(k || 'Income', '', {});
+  const draw = () => {
+    const list = calc(b, S.ui.acct).inc.filter(x => (x.payee || '').trim() === k);
+    el.querySelector('.sb').innerHTML = `<div class="stat2"><div class="card"><small>Received this budget</small><b class="green">${fmt(sum(list, x => x.amt))}</b></div><div class="card"><small>Entries</small><b>${list.length}</b></div></div>
+      <div class="sec">${txList(list, 'No income from here in this budget.')}</div>
+      <div class="form"><button class="btn" onclick="txForm({type:'income',payee:${esc(JSON.stringify(k))}})">Add income from ${esc(k || 'this source')}</button></div>`;
+  };
+  el._refresh = draw; draw();
+};
+window.openCat = id => {
+  const b = B(); const k = cat(id) || {id: '', name: 'Uncategorized', color: '#9E9E9E'};
+  const el = sheet(k.name, '', {head: id ? `<button class="ib" data-ed>${ic('edit')}</button>` : ''});
+  if (id) el.querySelector('[data-ed]').onclick = () => catForm(k);
+  const draw = () => {
+    const c = calc(b, S.ui.acct), lim = r2((b.limits || {})[id] || 0), sp = c.by[id] || 0, left = r2(lim - sp);
+    const list = c.exp.filter(x => (x.cat || '') === id);
+    const p = lim > 0 ? sp / lim * 100 : 0;
+    el.querySelector('h2').textContent = (cat(id) || k).name;
+    el.querySelector('.sb').innerHTML = `
+      <div class="card" style="padding:14px">
+        ${id ? `<div class="fld" style="margin-top:0"><label>Budget for ${esc(label(b))}</label><div style="display:flex;gap:10px;align-items:center"><input id="cLim" inputmode="decimal" value="${lim || ''}" placeholder="0.00" style="font-size:22px"><button class="btn" id="cSet" style="width:auto;margin:0;padding:10px 18px">Set</button></div></div>` : ''}
+        <div style="display:flex;justify-content:space-between;font-size:14px;margin-top:8px"><span>Spent <b>${fmt(sp)}</b></span><span class="${left < 0 ? 'red' : 'green'}"><b>${fmt(Math.abs(left))}</b> ${left < 0 ? 'over' : 'left'}</span></div>
+        <div class="pb" style="height:9px"><i class="${p > 100 ? 'over' : p > 85 ? 'warn' : ''}" style="width:${Math.min(100, p)}%"></i></div>
+        ${id ? `<label class="chk" style="margin-bottom:0"><input type="checkbox" id="cDef" ${k.def ? 'checked' : ''}>Use this amount for new budgets too</label>` : ''}
+      </div>
+      <div class="sec">${txList(list, 'No spending in this category yet.')}</div>
+      <div class="form"><button class="btn" onclick="txForm({type:'expense',cat:'${id}'})">Add expense</button></div>`;
+    if (id) {
+      el.querySelector('#cSet').onclick = () => {
+        const v = money(el.querySelector('#cLim').value);
+        b.limits = b.limits || {};
+        if (v > 0) b.limits[id] = v; else delete b.limits[id];
+        if (el.querySelector('#cDef').checked) cat(id).def = v > 0 ? v : 0;
+        save(); refresh(); toast('Budget set');
+      };
+      el.querySelector('#cDef').onchange = e => { cat(id).def = e.target.checked ? (money(el.querySelector('#cLim').value) || 0) : 0; save(); };
+    }
+  };
+  el._refresh = draw; draw();
+};
+
+/* ---------- budgets ---------- */
+window.openBudgets = () => {
+  const el = sheet('Budgets', '', {});
+  const draw = () => {
+    const list = S.budgets.slice().sort((a, b) => b.start.localeCompare(a.start));
+    el.querySelector('.sb').innerHTML = `<div class="form" style="display:flex;gap:8px;padding-top:12px"><button class="btn" style="margin:0" onclick="budgetForm()">New budget</button><button class="btn sec2" style="margin:0" onclick="startNext()">Clone to next period</button></div>
+      <div class="sec">${list.map(b => { const c = calc(b); return `<div class="row" data-b="${b.id}"><div class="av" style="background:${b.id === S.cur ? 'var(--or)' : '#B0BEC5'}">${ic(b.id === S.cur ? 'check' : 'event')}</div><div class="mid"><div class="nm">${esc(label(b))}</div><div class="sub">${b.name ? nice(b.start) + ' – ' + nice(b.end) + ' · ' : ''}Income ${fmt(c.income)} · Spent ${fmt(c.spent)}</div></div><div class="amtc ${c.saving < 0 ? 'red' : 'green'}">${fmt(c.saving)}<small>${c.saving < 0 ? 'overspent' : 'saved'}</small></div></div>`; }).join('')}</div>
+      <div class="form"><button class="btn sec2" onclick="budgetForm(B())">Edit current budget</button></div>`;
+    el.querySelectorAll('[data-b]').forEach(r => r.onclick = () => { S.cur = r.dataset.b; S._picked = true; save(); closeAll(); go('home'); });
+  };
+  el._refresh = draw; draw();
+};
+function nextPeriod(b) {
+  const a = pd(b.start), e = pd(b.end);
+  const wholeMonth = a.getDate() === 1 && e.getDate() === monthEnd(e.getFullYear(), e.getMonth());
+  if (wholeMonth) {
+    const months = (e.getFullYear() - a.getFullYear()) * 12 + e.getMonth() - a.getMonth() + 1;
+    const s = iso(new Date(e.getFullYear(), e.getMonth() + 1, 1));
+    return [s, iso(new Date(e.getFullYear(), e.getMonth() + 1 + months, 0))];
+  }
+  const len = daysBetween(b.start, b.end);
+  const s = addDays(b.end, 1);
+  return [s, addDays(s, len)];
+}
+window.startNext = () => {
+  const cur = latest(); const [s, e] = nextPeriod(cur);
+  budgetForm(null, {start: s, end: e, copyFrom: cur});
+};
+function budgetForm(b, preset) {
+  const isNew = !b; preset = preset || {};
+  const cur = B();
+  let s = b ? b.start : preset.start, e = b ? b.end : preset.end;
+  if (!s) { const t = today(); [s, e] = monthRange(t); if (S.budgets.some(x => x.start === s)) [s, e] = nextPeriod(latest()); }
+  const body = `<div class="form">
+    ${isNew ? `<div class="fld"><label>Period</label><select id="bPer"><option value="month">Monthly</option><option value="week">Weekly</option><option value="biweek">Every 2 weeks</option><option value="semi">Twice a month (1st–15th, 16th–end)</option><option value="custom">Custom dates</option></select></div>` : ''}
+    <div class="fld"><label>Starts</label><input type="date" id="bS" value="${s}"></div>
+    <div class="fld"><label>Ends</label><input type="date" id="bE" value="${e}"></div>
+    <div class="fld"><label>Name (optional)</label><input id="bN" value="${esc(b ? b.name : '')}" placeholder="e.g. Summer budget"></div>
+    ${isNew ? `<label class="chk"><input type="checkbox" id="bCopy" checked>Copy category budgets from ${esc(label(preset.copyFrom || cur))}</label>
+    <label class="chk"><input type="checkbox" id="bCarry">Carry over what's left from ${esc(label(preset.copyFrom || cur))} as income</label>` : ''}
+    <button class="btn" id="bSave">${isNew ? 'Create budget' : 'Save'}</button>
+    ${!isNew && S.budgets.length > 1 ? `<button class="btn ghost" id="bDel">Delete this budget</button><div class="hint">Deleting a budget keeps its transactions; they stay in your accounts and show up in any budget that covers their dates.</div>` : ''}
+  </div>`;
+  sheet(isNew ? 'New budget' : 'Edit budget', body, {
+    mount: el => {
+      const q = s => el.querySelector(s);
+      const per = q('#bPer');
+      if (per) per.onchange = () => {
+        const st = q('#bS').value || today(), v = per.value;
+        if (v === 'month') { const d = pd(st); q('#bE').value = iso(new Date(d.getFullYear(), d.getMonth() + 1, d.getDate() - 1)); }
+        if (v === 'week') q('#bE').value = addDays(st, 6);
+        if (v === 'biweek') q('#bE').value = addDays(st, 13);
+        if (v === 'semi') { const d = pd(st); if (d.getDate() <= 15) { q('#bS').value = iso(new Date(d.getFullYear(), d.getMonth(), 1)); q('#bE').value = iso(new Date(d.getFullYear(), d.getMonth(), 15)); } else { q('#bS').value = iso(new Date(d.getFullYear(), d.getMonth(), 16)); q('#bE').value = iso(new Date(d.getFullYear(), d.getMonth() + 1, 0)); } }
+      };
+      q('#bS').onchange = () => { if (per && per.value !== 'custom') per.onchange(); };
+      q('#bSave').onclick = () => {
+        const st = q('#bS').value, en = q('#bE').value;
+        if (!st || !en || en < st) { toast('The end date must be after the start date'); return; }
+        if (isNew) {
+          const src = preset.copyFrom || cur;
+          const nb = {id: uid(), name: q('#bN').value.trim(), start: st, end: en, limits: q('#bCopy').checked ? Object.assign({}, src.limits) : defLimits()};
+          S.budgets.push(nb);
+          if (q('#bCarry').checked) {
+            const left = calc(src).saving;
+            if (left > 0) S.tx.push({id: uid(), ts: Date.now(), type: 'income', amt: left, date: st, payee: 'Carried over', acct: S.ui.defAcct || S.accounts[0].id, cat: '', to: '', carry: true, note: 'Left over from ' + label(src)});
+          }
+          S.cur = nb.id; S._picked = true;
+          save(); closeAll(); go('home'); toast('Budget created');
+        } else {
+          b.start = st; b.end = en; b.name = q('#bN').value.trim(); save(); closeTop(); refresh(); toast('Saved');
+        }
+      };
+      if (q('#bDel')) q('#bDel').onclick = async () => {
+        if (!await ask('Delete budget?', esc(label(b)) + '. Its transactions are kept.', 'Delete', true)) return;
+        S.budgets = S.budgets.filter(x => x.id !== b.id); S._picked = false; ensureBudget(); save(); closeAll(); go('home');
+      };
+    }
+  });
+}
+window.budgetForm = budgetForm;
+
+/* ---------- categories ---------- */
+function catForm(k, done) {
+  const isNew = !k.id;
+  let color = k.color || CAT_COLORS[S.cats.length % CAT_COLORS.length];
+  const body = `<div class="form">
+    <div class="fld"><label>Name</label><input id="kN" value="${esc(k.name || '')}" placeholder="e.g. Pets"></div>
+    <div class="fld"><label>Default monthly budget (used for new budgets)</label><input id="kD" inputmode="decimal" value="${k.def || ''}" placeholder="0.00"></div>
+    <div class="fld"><label>Colour</label><div class="colors">${CAT_COLORS.map(c => `<button data-c="${c}" style="background:${c}" class="${c === color ? 'on' : ''}"></button>`).join('')}</div></div>
+    <button class="btn" id="kSave">${isNew ? 'Add category' : 'Save'}</button>
+    ${!isNew ? `<button class="btn ghost" id="kDel">Delete category</button>` : ''}
+  </div>`;
+  sheet(isNew ? 'New category' : 'Edit category', body, {
+    mount: el => {
+      const q = s => el.querySelector(s);
+      q('.colors').onclick = e => { const b = e.target.closest('button'); if (!b) return; color = b.dataset.c; q('.colors').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); };
+      setTimeout(() => q('#kN').focus(), 280);
+      q('#kSave').onclick = () => {
+        const name = q('#kN').value.trim(); if (!name) { toast('Give it a name'); return; }
+        const def = money(q('#kD').value) || 0;
+        let c = k;
+        if (isNew) { c = {id: uid(), name, color, def}; S.cats.push(c); if (def > 0) B().limits[c.id] = def; }
+        else Object.assign(cat(k.id), {name, color, def});
+        save(); closeTop(); refresh(); if (done) done(c);
+      };
+      if (q('#kDel')) q('#kDel').onclick = async () => {
+        const n = S.tx.filter(t => t.cat === k.id).length;
+        if (!await ask('Delete category?', `${esc(k.name)}${n ? `. Its ${n} transaction${n > 1 ? 's' : ''} will become Uncategorized.` : ''}`, 'Delete', true)) return;
+        S.cats = S.cats.filter(c => c.id !== k.id);
+        for (const t of S.tx) if (t.cat === k.id) t.cat = '';
+        for (const b of S.budgets) delete (b.limits || {})[k.id];
+        save(); closeAll(); refresh();
+      };
+    }
+  });
+}
+window.catForm = catForm;
+window.openCats = () => {
+  const el = sheet('Categories', '', {action: 'ADD', onAction: () => catForm({})});
+  const draw = () => {
+    const b = B();
+    el.querySelector('.sb').innerHTML = `<div class="hint" style="padding:12px 16px 0">Tap a category to rename it, change its colour or set its default budget.</div><div class="sec">${S.cats.map(c => `<div class="row" data-k="${c.id}">${av(c.name, c.color)}<div class="mid"><div class="nm">${esc(c.name)}</div><div class="sub">This budget: ${fmt((b.limits || {})[c.id] || 0)}${c.def ? ' · default ' + fmt(c.def) : ''}</div></div>${ic('right', 'mut')}</div>`).join('')}</div><div class="form"><button class="btn" onclick="catForm({})">New category</button></div>`;
+    el.querySelectorAll('[data-k]').forEach(r => r.onclick = () => catForm(cat(r.dataset.k)));
+  };
+  el._refresh = draw; draw();
+};
+window.setBudgets = () => {
+  const b = B();
+  const el = sheet('Set budgets', `<div class="hint" style="padding:12px 16px 0">${esc(label(b))}. Leave a box empty for no budget.</div><div class="form">${S.cats.map(c => `<div class="fld"><label>${esc(c.name)}</label><input inputmode="decimal" data-k="${c.id}" value="${(b.limits || {})[c.id] || ''}" placeholder="0.00"></div>`).join('')}<div class="hint" id="sbTot"></div><button class="btn" id="sbSave">Save budgets</button></div>`, {action: 'SAVE', onAction: e => e.querySelector('#sbSave').click()});
+  const tot = () => { let t = 0; el.querySelectorAll('[data-k]').forEach(i => t += money(i.value) || 0); const inc = calc(b).income; el.querySelector('#sbTot').innerHTML = `Total budgeted <b>${fmt(t)}</b> · income ${fmt(inc)} · provisional balance <b class="${inc - t < 0 ? 'red' : 'green'}">${fmt(inc - t)}</b>`; };
+  el.addEventListener('input', tot); tot();
+  el.querySelector('#sbSave').onclick = () => {
+    b.limits = {}; el.querySelectorAll('[data-k]').forEach(i => { const v = money(i.value); if (v > 0) b.limits[i.dataset.k] = v; });
+    save(); closeTop(); refresh(); toast('Budgets saved');
+  };
+};
+
+/* ---------- INSIGHT ---------- */
+let insTab = 'exp';
+function donut(parts, total, centre, sub) {
+  let acc = 0;
+  const segs = parts.map(p => { const v = total > 0 ? p.v / total * 100 : 0; const s = `<circle r="15.915" cx="21" cy="21" fill="none" stroke="${p.c}" stroke-width="6" stroke-dasharray="${v} ${100 - v}" stroke-dashoffset="${25 - acc}"/>`; acc += v; return s; }).join('');
+  return `<div class="donut"><svg viewBox="0 0 42 42" width="210" height="210"><circle r="15.915" cx="21" cy="21" fill="none" stroke="#EEEDF5" stroke-width="6"/>${segs}</svg><div class="mid2"><b>${centre}</b><small>${sub}</small></div></div>`;
+}
+function monthsBack(n) {
+  const out = [], d = new Date(); d.setDate(1);
+  for (let i = n - 1; i >= 0; i--) { const m = new Date(d.getFullYear(), d.getMonth() - i, 1); out.push({lbl: MON[m.getMonth()], s: iso(m), e: iso(new Date(m.getFullYear(), m.getMonth() + 1, 0))}); }
+  return out;
+}
+function renderInsight() {
+  const b = B(), c = calc(b, S.ui.acct);
+  let h = `<div style="padding:0 8px"><div class="seg">${[['exp', 'Expenses'], ['inc', 'Income'], ['trend', 'Trends']].map(([k, l]) => `<button class="${insTab === k ? 'on' : ''}" onclick="insTab='${k}';renderInsight()">${l}</button>`).join('')}</div></div>`;
+  if (insTab === 'exp') {
+    const parts = Object.entries(c.by).map(([id, v]) => ({id, v, n: catName(id), c: (cat(id) || {color: '#9E9E9E'}).color})).sort((a, b) => b.v - a.v);
+    h += `<div class="card chartcard"><h4>Where your money went</h4>${parts.length ? donut(parts, c.spent, fmt(c.spent), 'spent') + parts.map(p => `<div class="leg" onclick="openCat('${p.id}')"><i style="background:${p.c}"></i><span style="flex:1">${esc(p.n)}</span><span class="p">${(p.v / c.spent * 100).toFixed(1)}%</span><span class="v">${fmt(p.v)}</span></div>`).join('') : '<div class="empty">No spending in this budget yet.</div>'}</div>`;
+    const rows = S.cats.map(k => ({k, lim: (b.limits || {})[k.id] || 0, sp: c.by[k.id] || 0})).filter(r => r.lim || r.sp).sort((a, b) => b.lim - a.lim);
+    if (rows.length) {
+      const mx = Math.max(...rows.map(r => Math.max(r.lim, r.sp)));
+      h += `<div class="card chartcard"><h4>Budget vs actual</h4>${rows.map(r => `<div class="bvb"><div class="t"><span>${esc(r.k.name)}</span><span class="${r.sp > r.lim ? 'red' : 'mut'}">${fmt(r.sp)} / ${fmt(r.lim)}</span></div><div class="tr"><i style="width:${r.lim / mx * 100}%;background:#D1CDEB"></i><i style="width:${r.sp / mx * 100}%;background:${r.sp > r.lim ? 'var(--red)' : r.k.color};height:60%;top:20%"></i></div></div>`).join('')}<div class="legend2"><span><i style="background:#D1CDEB"></i>Budgeted</span><span><i style="background:var(--green)"></i>Spent</span></div></div>`;
+    }
+    h += dailyChart(b, c);
+    const pm = {}; for (const x of c.exp) { const k = x.payee || catName(x.cat); pm[k] = r2((pm[k] || 0) + x.amt); }
+    const tp = Object.entries(pm).sort((a, b) => b[1] - a[1]).slice(0, 6);
+    if (tp.length) h += `<div class="card chartcard"><h4>Top payees</h4>${tp.map(([n, v]) => `<div class="leg">${av(n).replace('class="av"', 'class="av" style="width:28px;height:28px;font-size:14px;background:' + avColor(n) + '"')}<span style="flex:1">${esc(n)}</span><span class="v">${fmt(v)}</span></div>`).join('')}</div>`;
+  } else if (insTab === 'inc') {
+    const g = {}; for (const x of c.inc) { const k = x.payee || '?'; g[k] = r2((g[k] || 0) + x.amt); }
+    const parts = Object.entries(g).map(([n, v]) => ({n, v, c: avColor(n)})).sort((a, b) => b.v - a.v);
+    h += `<div class="card chartcard"><h4>Income sources</h4>${parts.length ? donut(parts, c.income, fmt(c.income), 'income') + parts.map(p => `<div class="leg"><i style="background:${p.c}"></i><span style="flex:1">${esc(p.n)}</span><span class="p">${(p.v / c.income * 100).toFixed(1)}%</span><span class="v">${fmt(p.v)}</span></div>`).join('') : '<div class="empty">No income in this budget yet.</div>'}</div>`;
+    h += `<div class="stat2"><div class="card"><small>Saved</small><b class="${c.saving < 0 ? 'red' : 'green'}">${fmt(c.saving)}</b></div><div class="card"><small>Savings rate</small><b>${c.income > 0 ? (c.saving / c.income * 100).toFixed(1) : '0.0'}%</b></div></div>`;
+  } else {
+    const ms = monthsBack(6).map(m => { const f = S.tx.filter(x => x.date >= m.s && x.date <= m.e); return Object.assign(m, {i: sum(f.filter(x => x.type === 'income'), x => x.amt), x: sum(f.filter(x => x.type === 'expense'), x => x.amt)}); });
+    const mx = Math.max(1, ...ms.map(m => Math.max(m.i, m.x)));
+    const W = 340, H = 180, bw = 18, gap = W / 6;
+    let bars = '';
+    ms.forEach((m, k) => {
+      const x0 = k * gap + gap / 2 - bw;
+      const hi = m.i / mx * (H - 30), hx = m.x / mx * (H - 30);
+      bars += `<rect x="${x0}" y="${H - 20 - hi}" width="${bw}" height="${hi}" rx="3" fill="#8BC34A"/><rect x="${x0 + bw + 2}" y="${H - 20 - hx}" width="${bw}" height="${hx}" rx="3" fill="#FF8A1E"/><text x="${k * gap + gap / 2}" y="${H - 4}" text-anchor="middle" font-size="11" fill="#666">${m.lbl}</text>`;
+    });
+    h += `<div class="card chartcard"><h4>Income vs expenses, last 6 months</h4><svg viewBox="0 0 ${W} ${H}" width="100%"><line x1="0" x2="${W}" y1="${H - 20}" y2="${H - 20}" stroke="#ddd"/>${bars}</svg><div class="legend2"><span><i style="background:#8BC34A"></i>Income</span><span><i style="background:#FF8A1E"></i>Expenses</span></div></div>`;
+    h += `<div class="card chartcard"><h4>Monthly summary</h4>${ms.slice().reverse().map(m => `<div class="leg"><span style="flex:1">${m.lbl} '${m.s.slice(2, 4)}</span><span class="v green">${fmt(m.i)}</span><span class="v">${fmt(m.x)}</span><span class="v ${m.i - m.x < 0 ? 'red' : 'blue'}">${fmt(m.i - m.x)}</span></div>`).join('')}<div class="legend2" style="justify-content:flex-end"><span>income · spent · saved</span></div></div>`;
+    const avg = sum(ms, m => m.x) / 6;
+    h += `<div class="stat2"><div class="card"><small>Average monthly spending</small><b>${fmt(avg)}</b></div><div class="card"><small>Average monthly income</small><b>${fmt(sum(ms, m => m.i) / 6)}</b></div></div>`;
+    h += `<div class="stat2"><div class="card"><small>Forecast next 6 months (spending)</small><b>${fmt(avg * 6)}</b></div><div class="card"><small>Forecast next 6 months (saved)</small><b class="${sum(ms, m => m.i - m.x) < 0 ? 'red' : 'green'}">${fmt(sum(ms, m => m.i - m.x))}</b></div></div>`;
+  }
+  $('#v-insight').innerHTML = h;
+}
+window.renderInsight = renderInsight;
+Object.defineProperty(window, 'insTab', {get: () => insTab, set: v => { insTab = v; }});
+function dailyChart(b, c) {
+  const n = daysBetween(b.start, b.end) + 1; if (n < 2 || n > 400) return '';
+  const per = {}; for (const x of c.exp) per[x.date] = (per[x.date] || 0) + x.amt;
+  const t = today(); let run = 0; const pts = [];
+  for (let i = 0; i < n; i++) { const d = addDays(b.start, i); if (d > t) break; run += per[d] || 0; pts.push(run); }
+  const mx = Math.max(c.budgeted, run, 1), W = 340, H = 150;
+  const X = i => i / (n - 1) * (W - 10) + 5, Y = v => H - 18 - v / mx * (H - 30);
+  const line = pts.map((v, i) => `${i ? 'L' : 'M'}${X(i).toFixed(1)} ${Y(v).toFixed(1)}`).join(' ');
+  return `<div class="card chartcard"><h4>Spending pace</h4><svg viewBox="0 0 ${W} ${H}" width="100%">
+    <line x1="5" x2="${W - 5}" y1="${H - 18}" y2="${H - 18}" stroke="#ddd"/>
+    ${c.budgeted ? `<line x1="${X(0)}" y1="${Y(0)}" x2="${X(n - 1)}" y2="${Y(c.budgeted)}" stroke="#B0B0C8" stroke-dasharray="4 4"/>` : ''}
+    ${pts.length ? `<path d="${line}" fill="none" stroke="#FF8A1E" stroke-width="2.5" stroke-linejoin="round"/>` : ''}
+    <text x="5" y="${H - 3}" font-size="11" fill="#666">${shortD(b.start)}</text><text x="${W - 5}" y="${H - 3}" font-size="11" fill="#666" text-anchor="end">${shortD(b.end)}</text>
+  </svg><div class="legend2"><span><i style="background:#FF8A1E"></i>Spent so far</span>${c.budgeted ? '<span><i style="background:#B0B0C8"></i>Even pace to budget</span>' : ''}</div></div>`;
+}
+
+/* ---------- ACCOUNTS ---------- */
+function bal(a) {
+  let v = +a.open || 0;
+  for (const x of S.tx) {
+    if (x.carry) continue; // carried-over budget money is already sitting in the account
+    if (x.acct === a.id) v += x.type === 'income' ? x.amt : -x.amt;
+    if (x.type === 'transfer' && x.to === a.id) v += x.amt;
+  }
+  return r2(v);
+}
+function renderAccounts() {
+  const tot = sum(S.accounts, a => bal(a));
+  let h = `<div class="card nw"><small>Total across all accounts</small><b class="${tot < 0 ? 'red' : 'blue'}">${fmt(tot)}</b></div>
+    <div class="btnrow"><button class="btn" onclick="acctForm({})">Add account</button><button class="btn sec2" onclick="txForm({type:'transfer'})">Transfer</button></div>
+    <div class="sec">${S.accounts.map(a => { const v = bal(a); return `<div class="row" onclick="openAcct('${a.id}')"><div class="av" style="background:${a.type === 'Cash' ? '#66BB6A' : a.type === 'Credit card' ? '#EF5350' : a.type === 'Savings' ? '#26A69A' : '#5C6BC0'}">${ic(a.type === 'Cash' ? 'wallet' : 'bank')}</div><div class="mid"><div class="nm">${esc(a.name)}</div><div class="sub">${esc(a.type)}</div></div><div class="amtc ${v < 0 ? 'red' : ''}">${fmt(v)}</div></div>`; }).join('') || '<div class="empty">No accounts yet.</div>'}</div>`;
+  // goals preview
+  if (S.goals.length) h += `<div class="sec"><div class="sech" onclick="openGoals()"><span>Savings goals</span><span class="amt">${ic('right')}</span></div>${S.goals.map(goalRow).join('')}</div>`;
+  $('#v-accounts').innerHTML = h;
+}
+const ACC_TYPES = ['Bank', 'Savings', 'Cash', 'Credit card', 'Investment', 'Loan', 'Other'];
+window.acctForm = a => {
+  const isNew = !a.id;
+  sheet(isNew ? 'New account' : 'Edit account', `<div class="form">
+    <div class="fld"><label>Name</label><input id="aN" value="${esc(a.name || '')}" placeholder="e.g. Chase checking"></div>
+    <div class="fld"><label>Type</label><select id="aT">${ACC_TYPES.map(t => `<option ${a.type === t ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
+    <div class="fld"><label>Starting balance</label><input id="aO" inputmode="decimal" value="${a.open || ''}" placeholder="0.00"><div class="hint">For a credit card or loan, enter what you owe as a negative number, e.g. -450.</div></div>
+    <button class="btn" id="aSave">${isNew ? 'Add account' : 'Save'}</button>
+    ${!isNew ? `<button class="btn ghost" id="aDel">Delete account</button>` : ''}</div>`, {
+    mount: el => {
+      const q = s => el.querySelector(s);
+      q('#aSave').onclick = () => {
+        const name = q('#aN').value.trim(); if (!name) { toast('Give it a name'); return; }
+        const raw = q('#aO').value.trim(); const neg = raw.startsWith('-'); let open = money(raw.replace(/^-/, '')) || 0; if (neg) open = -open;
+        if (isNew) S.accounts.push({id: uid(), name, type: q('#aT').value, open});
+        else Object.assign(acct(a.id), {name, type: q('#aT').value, open});
+        save(); closeTop(); refresh();
+      };
+      if (q('#aDel')) q('#aDel').onclick = async () => {
+        if (S.accounts.length < 2) { toast('Keep at least one account'); return; }
+        const n = S.tx.filter(t => t.acct === a.id || t.to === a.id).length;
+        if (!await ask('Delete account?', `${esc(a.name)}${n ? ` and its ${n} transaction${n > 1 ? 's' : ''}` : ''} will be removed.`, 'Delete', true)) return;
+        S.tx = S.tx.filter(t => t.acct !== a.id && t.to !== a.id);
+        S.rec = S.rec.filter(r => r.tpl.acct !== a.id && r.tpl.to !== a.id);
+        S.accounts = S.accounts.filter(x => x.id !== a.id);
+        if (S.ui.acct === a.id) S.ui.acct = ''; if (S.ui.defAcct === a.id) S.ui.defAcct = S.accounts[0].id;
+        save(); closeAll(); refresh();
+      };
+    }
+  });
+};
+window.openAcct = id => {
+  const a = acct(id);
+  const el = sheet(a.name, '', {head: `<button class="ib" data-ed>${ic('edit')}</button>`});
+  el.querySelector('[data-ed]').onclick = () => acctForm(acct(id));
+  const draw = () => {
+    const A = acct(id); if (!A) return;
+    el.querySelector('h2').textContent = A.name;
+    const list = S.tx.filter(x => x.acct === id || x.to === id);
+    el.querySelector('.sb').innerHTML = `<div class="card nw"><small>Balance</small><b class="${bal(A) < 0 ? 'red' : 'blue'}">${fmt(bal(A))}</b><div class="hint">Started at ${fmt(A.open || 0)}</div></div>
+      <div class="btnrow"><button class="btn" onclick="txForm({type:'expense',acct:'${id}'})">Expense</button><button class="btn sec2" onclick="txForm({type:'income',acct:'${id}'})">Income</button><button class="btn sec2" onclick="txForm({type:'transfer',acct:'${id}'})">Transfer</button></div>
+      <div class="sec">${txList(list, 'No transactions in this account yet.')}</div>`;
+  };
+  el._refresh = draw; draw();
+};
+
+/* ---------- goals ---------- */
+function goalRow(g) {
+  const p = g.target > 0 ? g.saved / g.target * 100 : 0;
+  return `<div class="goal" onclick="goalForm('${g.id}')"><div class="t"><b>${esc(g.name)}</b><span class="mut">${fmt(g.saved)} of ${fmt(g.target)}</span></div><div class="pb"><i style="width:${Math.min(100, p)}%;background:${p >= 100 ? 'var(--green)' : 'var(--blue)'}"></i></div><div class="hint">${p >= 100 ? 'Reached!' : `${p.toFixed(0)}% · ${fmt(g.target - g.saved)} to go`}${g.by && p < 100 ? ` · by ${nice(g.by)}${perMonth(g)}` : ''}</div></div>`;
+}
+function perMonth(g) {
+  const m = Math.max(1, Math.ceil(daysBetween(today(), g.by) / 30.4));
+  return daysBetween(today(), g.by) > 0 ? ` · ${fmt((g.target - g.saved) / m)}/month` : ' · past due';
+}
+window.openGoals = () => {
+  const el = sheet('Savings goals', '', {action: 'ADD', onAction: () => goalForm()});
+  const draw = () => { el.querySelector('.sb').innerHTML = (S.goals.length ? `<div class="sec">${S.goals.map(goalRow).join('')}</div>` : `<div class="empty">Set a goal — an emergency fund, a trip, a new car — and track how close you are.</div>`) + `<div class="form"><button class="btn" onclick="goalForm()">New goal</button></div>`; };
+  el._refresh = draw; draw();
+};
+window.goalForm = id => {
+  const g = S.goals.find(x => x.id === id) || {};
+  const isNew = !g.id;
+  sheet(isNew ? 'New goal' : g.name, `<div class="form">
+    ${!isNew ? `<div class="card" style="margin:8px 0;padding:12px"><div class="fld" style="margin:0"><label>Add or withdraw money (use - to withdraw)</label><div style="display:flex;gap:10px"><input id="gAdd" inputmode="decimal" placeholder="0.00" style="font-size:20px"><button class="btn" id="gAddB" style="width:auto;margin:0;padding:10px 18px">Add</button></div></div></div>` : ''}
+    <div class="fld"><label>Goal name</label><input id="gN" value="${esc(g.name || '')}" placeholder="e.g. Emergency fund"></div>
+    <div class="fld"><label>Target amount</label><input id="gT" inputmode="decimal" value="${g.target || ''}" placeholder="0.00"></div>
+    <div class="fld"><label>Saved so far</label><input id="gS" inputmode="decimal" value="${g.saved || ''}" placeholder="0.00"></div>
+    <div class="fld"><label>Target date (optional)</label><input type="date" id="gD" value="${g.by || ''}"></div>
+    <button class="btn" id="gSave">${isNew ? 'Create goal' : 'Save'}</button>
+    ${!isNew ? `<button class="btn ghost" id="gDel">Delete goal</button>` : ''}</div>`, {
+    mount: el => {
+      const q = s => el.querySelector(s);
+      q('#gSave').onclick = () => {
+        const name = q('#gN').value.trim(), target = money(q('#gT').value);
+        if (!name || !(target > 0)) { toast('Enter a name and a target'); return; }
+        const o = {name, target, saved: money(q('#gS').value) || 0, by: q('#gD').value};
+        if (isNew) S.goals.push(Object.assign({id: uid()}, o)); else Object.assign(g, o);
+        save(); closeTop(); refresh();
+      };
+      if (q('#gAddB')) q('#gAddB').onclick = () => {
+        const raw = q('#gAdd').value.trim(); const neg = raw.startsWith('-'); let v = money(raw.replace(/^-/, '')); if (!(v > 0)) return; if (neg) v = -v;
+        g.saved = r2(Math.max(0, g.saved + v)); save(); q('#gS').value = g.saved; q('#gAdd').value = ''; refresh();
+        toast(g.saved >= g.target ? 'Goal reached!' : `${fmt(g.target - g.saved)} to go`);
+      };
+      if (q('#gDel')) q('#gDel').onclick = async () => { if (!await ask('Delete goal?', esc(g.name), 'Delete', true)) return; S.goals = S.goals.filter(x => x.id !== g.id); save(); closeTop(); refresh(); };
+    }
+  });
+};
+
+/* ---------- recurring list ---------- */
+window.openRecurring = () => {
+  const el = sheet('Recurring transactions', '', {});
+  const draw = () => {
+    el.querySelector('.sb').innerHTML = (S.rec.length ? `<div class="sec">${S.rec.slice().sort((a, b) => a.next.localeCompare(b.next)).map(r => `<div class="row" data-r="${r.id}">${av(r.tpl.payee || catName(r.tpl.cat), r.tpl.type === 'expense' ? (cat(r.tpl.cat) || {}).color : null)}<div class="mid"><div class="nm">${esc(r.tpl.payee || (r.tpl.type === 'transfer' ? 'Transfer' : catName(r.tpl.cat)))}</div><div class="sub">${FREQ[r.freq]} · next ${shortD(r.next)}</div></div><div class="amtc ${r.tpl.type === 'income' ? 'green' : ''}">${r.tpl.type === 'income' ? '+' : r.tpl.type === 'expense' ? '-' : ''}${fmt(r.tpl.amt)}</div></div>`).join('')}</div>`
+      : `<div class="empty">No recurring transactions.<br>When you add a bill, paycheck or subscription, set <b>Repeat</b> and it will be added automatically each time it comes due.</div>`)
+      + `<div class="form"><button class="btn" onclick="txForm({type:'expense'})">Add a recurring bill</button></div>`;
+    el.querySelectorAll('[data-r]').forEach(row => row.onclick = () => {
+      const r = S.rec.find(x => x.id === row.dataset.r);
+      choose(r.tpl.payee || 'Recurring', [
+        {label: 'Edit the latest one', icon: 'edit', fn: () => { const l = S.tx.filter(t => t.rec === r.id).sort((a, b) => b.date.localeCompare(a.date))[0]; if (l) txForm(l); else toast('Nothing posted yet; it starts ' + nice(r.next)); }},
+        {label: 'Skip the next one (' + shortD(r.next) + ')', icon: 'right', fn: () => { r.next = nextDate(r, r.next); save(); refresh(); toast('Next one is ' + nice(r.next)); }},
+        {label: 'Stop repeating', icon: 'del', fn: async () => { if (await ask('Stop repeating?', 'Transactions already added are kept.', 'Stop', true)) { S.rec = S.rec.filter(x => x.id !== r.id); for (const t of S.tx) if (t.rec === r.id) t.rec = ''; save(); refresh(); } }}
+      ]);
+    });
+  };
+  el._refresh = draw; draw();
+};
+
+/* ---------- search ---------- */
+window.openSearch = () => {
+  const el = sheet('', '', {});
+  el.querySelector('h2').outerHTML = `<div class="searchbox"><input id="sq" placeholder="Search payee, category, note, amount" autocomplete="off"></div>`;
+  const inp = el.querySelector('#sq');
+  const draw = () => {
+    const q = inp.value.trim().toLowerCase();
+    const res = !q ? [] : S.tx.filter(x => [x.payee, x.note, catName(x.cat), acctName(x.acct), String(x.amt), x.type].join(' ').toLowerCase().includes(q));
+    el.querySelector('.sb').innerHTML = q ? `<div class="hint" style="padding:10px 16px">${res.length} result${res.length === 1 ? '' : 's'} · ${fmt(sum(res.filter(x => x.type === 'expense'), x => x.amt))} spent · ${fmt(sum(res.filter(x => x.type === 'income'), x => x.amt))} received</div><div class="sec">${txList(res.slice(0, 300), 'Nothing matches.')}</div>` : `<div class="empty">Search every transaction in every budget.</div>`;
+  };
+  inp.oninput = draw; el._refresh = draw; draw();
+  setTimeout(() => inp.focus(), 280);
+};
+
+/* ---------- I WANT TO ---------- */
+const WANT = [
+  ['Money', [
+    ['Add an expense', 'exp', '#EF5350', () => txForm({type: 'expense'})],
+    ['Add income', 'inc', '#66BB6A', () => txForm({type: 'income'})],
+    ['Transfer money', 'swap', '#78909C', () => txForm({type: 'transfer'})],
+    ['Search transactions', 'search', '#5C6BC0', () => openSearch()],
+  ]],
+  ['Budget', [
+    ['Set my budgets', 'tune', '#FF8A1E', () => setBudgets()],
+    ['Start a new budget', 'event', '#29B6F6', () => budgetForm()],
+    ['Clone to next period', 'copy', '#26A69A', () => startNext()],
+    ['See all budgets', 'list', '#7E57C2', () => openBudgets()],
+    ['Manage categories', 'cat', '#EC407A', () => openCats()],
+    ['Recurring bills & income', 'repeat', '#8D6E63', () => openRecurring()],
+    ['Savings goals', 'flag', '#FFA726', () => openGoals()],
+    ['Manage accounts', 'bank', '#5C6BC0', () => go('accounts')],
+  ]],
+  ['Data', [
+    ['Export to CSV', 'dl', '#43A047', () => exportCSV()],
+    ['Back up my data', 'backup', '#1E88E5', () => backup()],
+    ['Restore a backup', 'restore', '#546E7A', () => restore()],
+    ['Settings', 'gear', '#757575', () => openSettings()],
+  ]]
+];
+function renderWant() {
+  $('#v-want').innerHTML = WANT.map(([h, items], gi) => `<div class="wh">${h}</div><div class="wgrid">${items.map(([l, i, c], k) => `<button onclick="WANT[${gi}][1][${k}][3]()"><span class="wi" style="background:${c}">${ic(i)}</span>${l}</button>`).join('')}</div>`).join('') + '<div style="height:20px"></div>';
+}
+window.WANT = WANT;
+
+/* ---------- data ---------- */
+function saveFile(name, text, mime) {
+  if (window.Native && Native.save) { Native.save(name, text, mime); return; }
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], {type: mime})); a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  toast('Saved ' + name);
+}
+function stamp() { const d = new Date(); return `${iso(d)}-${pad(d.getHours())}${pad(d.getMinutes())}`; }
+window.exportCSV = () => {
+  const q = v => `"${String(v == null ? '' : v).replace(/"/g, '""')}"`;
+  const rows = [['Date', 'Type', 'Payee', 'Category', 'Account', 'To account', 'Amount', 'Note']];
+  for (const x of S.tx.slice().sort((a, b) => a.date.localeCompare(b.date))) rows.push([x.date, x.type, x.payee, x.type === 'expense' ? catName(x.cat) : '', acctName(x.acct), x.to ? acctName(x.to) : '', (x.type === 'expense' ? -x.amt : x.amt).toFixed(2), x.note]);
+  saveFile(`isavemoney-${stamp()}.csv`, rows.map(r => r.map(q).join(',')).join('\n'), 'text/csv');
+};
+window.backup = () => saveFile(`isavemoney-backup-${stamp()}.json`, JSON.stringify(S), 'application/json');
+window.restore = () => {
+  const inp = document.createElement('input'); inp.type = 'file'; inp.accept = '.json,application/json,text/plain,*/*';
+  inp.onchange = () => {
+    const f = inp.files[0]; if (!f) return;
+    const rd = new FileReader();
+    rd.onload = async () => {
+      let d; try { d = JSON.parse(rd.result); } catch (e) { toast('That file is not an iSaveMoney backup'); return; }
+      if (!d || !Array.isArray(d.tx) || !Array.isArray(d.budgets)) { toast('That file is not an iSaveMoney backup'); return; }
+      if (!await ask('Restore this backup?', `${d.tx.length} transactions and ${d.budgets.length} budgets. Everything currently in the app will be replaced.`, 'Restore', true)) return;
+      S = d; localStorage.setItem(KEY, JSON.stringify(S)); load(); closeAll(); go('home'); toast('Backup restored');
+    };
+    rd.readAsText(f);
+  };
+  inp.click();
+};
+window.openSettings = () => {
+  const cur = ['$', '€', '£', '¥', '₹', '₦', '₱', 'R', 'R$', 'C$', 'A$', 'CHF ', 'kr '];
+  sheet('Settings', `<div class="form">
+    <div class="fld"><label>Currency symbol</label><select id="sC">${cur.map(c => `<option ${S.currency === c ? 'selected' : ''} value="${esc(c)}">${esc(c.trim())}</option>`).join('')}${cur.includes(S.currency) ? '' : `<option selected>${esc(S.currency)}</option>`}</select></div>
+    <div class="fld"><label>Or type your own</label><input id="sC2" placeholder="e.g. KSh " value=""></div>
+    <div class="fld"><label>Default account for new transactions</label><select id="sA">${S.accounts.map(a => `<option value="${a.id}" ${S.ui.defAcct === a.id ? 'selected' : ''}>${esc(a.name)}</option>`).join('')}</select></div>
+    <button class="btn" id="sSave">Save</button>
+    <div class="wh" style="margin:28px 0 6px">Sample data</div>
+    <div class="hint">Fills the app with a month of example income and spending so you can see how everything works. It replaces what's there now.</div>
+    <button class="btn sec2" id="sSample">Load sample data</button>
+    <div class="wh" style="margin:28px 0 6px">Danger zone</div>
+    <button class="btn ghost" id="sWipe">Erase everything</button>
+    <div class="hint" style="margin-top:24px">iSaveMoney · everything is stored on this phone only. Use <b>Back up my data</b> before uninstalling or switching phones.</div>
+  </div>`, {
+    mount: el => {
+      const q = s => el.querySelector(s);
+      q('#sSave').onclick = () => { S.currency = q('#sC2').value || q('#sC').value; S.ui.defAcct = q('#sA').value; save(); closeTop(); refresh(); toast('Saved'); };
+      q('#sSample').onclick = () => loadSample();
+      q('#sWipe').onclick = async () => { if (!await ask('Erase everything?', 'All budgets, transactions, accounts and goals will be deleted from this phone. This cannot be undone.', 'Erase', true)) return; S = fresh(); ensureBudget(); save(); closeAll(); go('home'); toast('Erased'); };
+    }
+  });
+};
+
+/* ---------- sample data (mirrors the screenshot's numbers for the current month) ---------- */
+window.loadSample = async () => {
+  if (S.tx.length && !await ask('Load sample data?', 'This replaces everything currently in the app.', 'Load', true)) return;
+  S = fresh(); const [ms, me] = monthRange(today()); const days = pd(me).getDate();
+  const byName = n => S.cats.find(c => c.name === n).id;
+  S.accounts = [{id: 'acc-checking', name: 'Checking', type: 'Bank', open: 2450}, {id: 'acc-savings', name: 'Savings', type: 'Savings', open: 5200}, {id: 'acc-cash', name: 'Cash', type: 'Cash', open: 120}, {id: 'acc-card', name: 'Credit card', type: 'Credit card', open: -380}];
+  const limits = {'Rent / Mortgage': 1200, 'Groceries': 450, 'Utilities': 220, 'Phone & Internet': 120, 'Transportation': 260, 'Dining Out': 150, 'Entertainment': 90, 'Subscriptions': 63.40, 'Health': 100, 'Shopping': 100};
+  for (const [n, v] of Object.entries(limits)) byName(n) && (S.cats.find(c => c.name === n).def = v);
+  const b = {id: uid(), name: '', start: ms, end: me, limits: {}};
+  for (const [n, v] of Object.entries(limits)) b.limits[byName(n)] = v;
+  S.budgets = [b]; S.cur = b.id;
+  const lastDay = Math.min(days, pd(today()).getDate());
+  const day = k => iso(new Date(pd(ms).getFullYear(), pd(ms).getMonth(), Math.max(1, Math.round(k / 16 * lastDay))));
+  const add = (type, amt, d, payee, catN, acc, note) => S.tx.push({id: uid(), ts: Date.now(), type, amt: r2(amt), date: d, payee, cat: catN ? byName(catN) : '', acct: acc || 'acc-checking', to: '', note: note || ''});
+  [['Mine', 1163.32, 1], ['Current', 156.08, 5], ['Concur', 150.68, 9], ['BlueVine', 77, 12], ['', 17.10, 14]].forEach(([p, a, d]) => add('income', a, day(d), p));
+  const spend = {
+    'Groceries': [[1, 'Safeway', 96.12], [8, 'Costco', 142.88], [15, "Trader Joe's", 73.45]],
+    'Utilities': [[3, 'SRP', 141.70], [6, 'City Water', 42.50]],
+    'Phone & Internet': [[2, 'Verizon', 119.99]],
+    'Transportation': [[4, 'Shell', 48.20], [10, 'QuikTrip', 52.63], [13, 'Car wash', 18.00], [16, 'Shell', 86.80]],
+    'Dining Out': [[5, 'Chipotle', 24.35], [7, 'Starbucks', 17.45], [11, 'Olive Garden', 100.00]],
+    'Entertainment': [[9, 'AMC Theatres', 64.00]],
+    'Subscriptions': [[1, 'Netflix', 22.99], [3, 'Spotify', 11.99], [12, 'iCloud', 12.99]],
+    'Health': [[6, 'CVS', 35.00]],
+    'Shopping': [[4, 'Amazon', 131.53], [14, 'Target', 125.00]]
+  };
+  for (const [c, list] of Object.entries(spend)) for (const [d, p, a] of list) add('expense', a, day(d), p, c, p === 'Amazon' || p === 'Olive Garden' ? 'acc-card' : p === 'Car wash' ? 'acc-cash' : 'acc-checking');
+  // five earlier months for the Trends tab
+  for (let m = 1; m <= 5; m++) {
+    const s = addMonths(ms, -m, 1);
+    const d = k => addDays(s, k - 1);
+    add('income', 2400 + m * 37.5, d(1), 'Mine'); add('income', 160 + m * 11, d(15), 'Current');
+    add('expense', 1200, d(1), 'Landlord', 'Rent / Mortgage');
+    add('expense', 380 + m * 19, d(9), 'Costco', 'Groceries'); add('expense', 160 + m * 13, d(5), 'SRP', 'Utilities');
+    add('expense', 119.99, d(2), 'Verizon', 'Phone & Internet'); add('expense', 190 + m * 8, d(12), 'Shell', 'Transportation');
+    add('expense', 110 + m * 21, d(18), 'Chipotle', 'Dining Out'); add('expense', 47.97, d(3), 'Netflix', 'Subscriptions');
+    add('expense', 60 + m * 30, d(21), 'Amazon', 'Shopping', 'acc-card');
+    S.tx.push({id: uid(), ts: Date.now(), type: 'transfer', amt: r2(60 + m * 30), date: d(25), payee: '', cat: '', acct: 'acc-checking', to: 'acc-card', note: 'Card payment'});
+  }
+  S.tx.push({id: uid(), ts: Date.now(), type: 'transfer', amt: 200, date: day(15), payee: '', cat: '', acct: 'acc-checking', to: 'acc-savings', note: 'Monthly savings'});
+  const rr = {id: uid(), freq: 'monthly', day: 1, next: addMonths(ms, 1, 1), tpl: {type: 'expense', amt: 22.99, acct: 'acc-checking', payee: 'Netflix', cat: byName('Subscriptions'), to: '', note: ''}};
+  S.rec.push(rr); S.tx.find(t => t.payee === 'Netflix' && t.date === day(1)).rec = rr.id;
+  S.goals = [{id: uid(), name: 'Emergency fund', target: 10000, saved: 5200, by: addMonths(ms, 10, 1)}, {id: uid(), name: 'Summer trip', target: 1800, saved: 640, by: addMonths(ms, 7, 1)}];
+  save(); closeAll(); go('home'); toast('Sample data loaded');
+};
+
+/* ---------- drawer ---------- */
+function renderDrawer() {
+  const list = S.budgets.slice().sort((a, b) => b.start.localeCompare(a.start)).slice(0, 6);
+  $('#drawer').innerHTML = `<div class="dh"><div class="logo"><svg width="46" height="46" viewBox="20 20 68 68">${LOGO}</svg></div><b>iSaveMoney</b><small>${S.tx.length} transactions · ${S.budgets.length} budget${S.budgets.length > 1 ? 's' : ''}</small></div>
+    <div class="dl">BUDGETS</div>
+    ${list.map(b => `<button class="di ${b.id === S.cur ? 'cur' : ''}" data-b="${b.id}">${ic('event')}${esc(label(b))}</button>`).join('')}
+    <button class="di" data-a="all">${ic('list')}All budgets</button>
+    <button class="di" data-a="new">${ic('add')}New budget</button>
+    <hr>
+    <button class="di" data-a="set">${ic('tune')}Set my budgets</button>
+    <button class="di" data-a="cats">${ic('cat')}Categories</button>
+    <button class="di" data-a="rec">${ic('repeat')}Recurring</button>
+    <button class="di" data-a="goals">${ic('flag')}Savings goals</button>
+    <hr>
+    <button class="di" data-a="csv">${ic('dl')}Export to CSV</button>
+    <button class="di" data-a="bak">${ic('backup')}Back up</button>
+    <button class="di" data-a="res">${ic('restore')}Restore</button>
+    <button class="di" data-a="settings">${ic('gear')}Settings</button>`;
+  const A = {all: openBudgets, new: () => budgetForm(), set: setBudgets, cats: openCats, rec: openRecurring, goals: openGoals, csv: exportCSV, bak: backup, res: restore, settings: openSettings};
+  $('#drawer').querySelectorAll('[data-b]').forEach(x => x.onclick = () => { S.cur = x.dataset.b; S._picked = true; save(); drawer(false); go('home'); });
+  $('#drawer').querySelectorAll('[data-a]').forEach(x => x.onclick = () => { drawer(false); setTimeout(A[x.dataset.a], 120); });
+}
+
+/* ---------- boot ---------- */
+function boot() {
+  $('#logoSvg').innerHTML = LOGO;
+  $('#menuBtn').innerHTML = ic('menu'); $('#searchBtn').innerHTML = ic('search'); $('#fab').innerHTML = ic('add');
+  document.querySelectorAll('#nav button').forEach(b => { const [i, l] = NAV[b.dataset.v]; b.innerHTML = ic(i) + l; b.onclick = () => go(b.dataset.v); });
+  $('#menuBtn').onclick = () => drawer(true);
+  $('#scrim').onclick = () => drawer(false);
+  $('#searchBtn').onclick = openSearch;
+  $('#title').onclick = () => { if (view === 'home' || view === 'insight') openBudgets(); };
+  $('#fab').onclick = () => choose('Add', [
+    {label: 'Expense', icon: 'exp', fn: () => txForm({type: 'expense'})},
+    {label: 'Income', icon: 'inc', fn: () => txForm({type: 'income'})},
+    {label: 'Transfer', icon: 'swap', fn: () => txForm({type: 'transfer'})}
+  ]);
+  load(); runRecurring(); render();
+  setTimeout(() => { $('#splash').style.opacity = 0; setTimeout(() => $('#splash').remove(), 400); }, 900);
+}
+window.txForm = txForm;
+document.addEventListener('visibilitychange', () => { if (!document.hidden && S) { runRecurring(); refresh(); } });
+boot();
+</script>
+</body>
+</html>
