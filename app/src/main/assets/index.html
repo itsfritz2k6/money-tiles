@@ -951,7 +951,7 @@ function paySettings(id) {
   const sec = (title, inner) => `<div class="card2"><b>${title}</b>${inner}</div>`;
   const el = sheet('Pay settings', `<div class="form">
     ${sec('Pay', `
-      <div class="fld"><label>Hourly rate</label><input id="sRate" inputmode="decimal" value="${p.rate || ''}" placeholder="e.g. 28.86"></div>
+      <div class="fld"><label>Hourly rate</label><input id="sRate" inputmode="decimal" value="${p.rate || ''}" placeholder="e.g. 22.50"></div>
       <div style="display:flex;gap:10px"><div class="fld" style="flex:1"><label>Overtime after</label><div class="inl" style="margin:0"><input id="sOtA" inputmode="decimal" value="${p.otAfter}" style="max-width:none"><span>hrs/wk</span></div></div>
       <div class="fld" style="flex:1"><label>Overtime pays</label><div class="inl" style="margin:0"><input id="sOtM" inputmode="decimal" value="${p.otMult}" style="max-width:none"><span>× rate</span></div></div></div>
       <div class="fld"><label>Extra $ per hour for some hours (premiums)</label><div id="sPrem">${rowsHTML('prem', p.prem)}</div><button class="btn soft" data-add="prem" style="margin-top:4px">${ic('add')}Add a premium</button></div>
