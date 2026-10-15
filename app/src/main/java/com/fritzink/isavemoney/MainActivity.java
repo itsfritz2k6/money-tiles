@@ -35,7 +35,6 @@ import java.nio.charset.StandardCharsets;
 /** The whole app is the offline page in assets/index.html; this activity hosts it and gives it file saving and self-updates. */
 public class MainActivity extends Activity {
     private static final int REQ_FILE = 7;
-    private static final String RELEASES = "https://api.github.com/repos/itsfritz2k6/money-tiles/releases/latest";
     private static final String ACTION_INSTALLED = "com.fritzink.isavemoney.UPDATE_RESULT";
     private WebView web;
     private ValueCallback<Uri[]> fileCb;
@@ -73,6 +72,11 @@ public class MainActivity extends Activity {
             }
         });
         setContentView(web);
+        // background check + notification for new versions; the page itself blocks use until she updates
+        UpdateJob.schedule(this);
+        UpdateJob.cancelNote(this);
+        if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission("android.permission.POST_NOTIFICATIONS") != android.content.pm.PackageManager.PERMISSION_GRANTED)
+            requestPermissions(new String[]{"android.permission.POST_NOTIFICATIONS"}, 9);
         if (saved != null) web.restoreState(saved);
         else web.loadUrl("file:///android_asset/index.html");
     }
@@ -97,6 +101,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
+        UpdateJob.cancelNote(this);
         if (waitingPerm) {
             waitingPerm = false;
             if (canInstall()) downloadAndInstall(pendingUpdate);
@@ -213,29 +218,7 @@ public class MainActivity extends Activity {
         /** Asks GitHub for the newest release; answers through window.onUpdateInfo({ok, tag, url, notes}). */
         @JavascriptInterface
         public void checkUpdate() {
-            new Thread(() -> {
-                JSONObject out = new JSONObject();
-                try {
-                    HttpURLConnection c = (HttpURLConnection) new URL(RELEASES).openConnection();
-                    c.setConnectTimeout(10000);
-                    c.setReadTimeout(15000);
-                    c.setRequestProperty("Accept", "application/vnd.github+json");
-                    c.setRequestProperty("User-Agent", "MoneyTiles");
-                    ByteArrayOutputStream b = new ByteArrayOutputStream();
-                    try (InputStream in = c.getInputStream()) { byte[] buf = new byte[8192]; int n; while ((n = in.read(buf)) > 0) b.write(buf, 0, n); }
-                    JSONObject j = new JSONObject(b.toString("UTF-8"));
-                    String apk = "";
-                    JSONArray assets = j.optJSONArray("assets");
-                    for (int i = 0; assets != null && i < assets.length(); i++) {
-                        JSONObject a = assets.getJSONObject(i);
-                        if (a.optString("name").endsWith(".apk")) { apk = a.optString("browser_download_url"); break; }
-                    }
-                    out.put("ok", !apk.isEmpty()).put("tag", j.optString("tag_name")).put("url", apk).put("notes", j.optString("body"));
-                } catch (Exception e) {
-                    try { out.put("ok", false); } catch (Exception ignored) { }
-                }
-                jsRaw("window.onUpdateInfo&&onUpdateInfo(" + out + ")");
-            }).start();
+            new Thread(() -> jsRaw("window.onUpdateInfo&&onUpdateInfo(" + UpdateJob.latest() + ")")).start();
         }
 
         @JavascriptInterface
