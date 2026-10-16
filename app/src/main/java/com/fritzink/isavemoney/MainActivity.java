@@ -44,9 +44,32 @@ public class MainActivity extends Activity {
     private String pendingUpdate;      // APK url waiting on the "install unknown apps" permission
     private boolean waitingPerm;
 
+    /** Writes any crash to a file so the next launch can show it (and she can send it). */
+    private void catchCrashes() {
+        Thread.UncaughtExceptionHandler prev = Thread.getDefaultUncaughtExceptionHandler();
+        if (prev instanceof CrashLog) return;
+        Thread.setDefaultUncaughtExceptionHandler(new CrashLog(getApplicationContext(), prev));
+    }
+
+    static class CrashLog implements Thread.UncaughtExceptionHandler {
+        private final android.content.Context ctx;
+        private final Thread.UncaughtExceptionHandler prev;
+        CrashLog(android.content.Context c, Thread.UncaughtExceptionHandler p) { ctx = c; prev = p; }
+        @Override
+        public void uncaughtException(Thread t, Throwable e) {
+            try (java.io.PrintWriter w = new java.io.PrintWriter(new FileOutputStream(new File(ctx.getFilesDir(), "crash.txt")))) {
+                w.println("Money Tiles " + UpdateJob.installed(ctx) + " on Android " + Build.VERSION.RELEASE + " (" + Build.MANUFACTURER + " " + Build.MODEL + ")");
+                w.println(new java.util.Date());
+                e.printStackTrace(w);
+            } catch (Exception ignored) { }
+            if (prev != null) prev.uncaughtException(t, e);
+        }
+    }
+
     @Override
     protected void onCreate(Bundle saved) {
         super.onCreate(saved);
+        catchCrashes();
         web = new WebView(this);
         web.setBackgroundColor(Color.WHITE);
         WebSettings s = web.getSettings();
@@ -56,7 +79,19 @@ public class MainActivity extends Activity {
         s.setAllowFileAccess(true);
         s.setTextZoom(100);
         web.addJavascriptInterface(new Bridge(), "Native");
-        web.setWebViewClient(new WebViewClient());
+        web.setWebViewClient(new WebViewClient() {
+            // If Android's web engine crashes, don't let it take the whole app down: start the page again.
+            @Override
+            public boolean onRenderProcessGone(WebView view, android.webkit.RenderProcessGoneDetail detail) {
+                try {
+                    android.view.ViewGroup parent = (android.view.ViewGroup) view.getParent();
+                    if (parent != null) parent.removeView(view);
+                    view.destroy();
+                } catch (Exception ignored) { }
+                recreate();
+                return true;
+            }
+        });
         web.setWebChromeClient(new WebChromeClient() {
             @Override
             public boolean onShowFileChooser(WebView v, ValueCallback<Uri[]> cb, FileChooserParams p) {
@@ -77,10 +112,13 @@ public class MainActivity extends Activity {
         setContentView(web);
         // background check + notification for new versions; the page itself blocks use until she updates
         live = this;
-        UpdateJob.schedule(this);
-        UpdateJob.cancelNote(this);
-        if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission("android.permission.POST_NOTIFICATIONS") != android.content.pm.PackageManager.PERMISSION_GRANTED)
-            requestPermissions(new String[]{"android.permission.POST_NOTIFICATIONS"}, 9);
+        // none of these extras may ever stop the app from opening
+        try { UpdateJob.schedule(this); } catch (Throwable ignored) { }
+        try { UpdateJob.cancelNote(this); } catch (Throwable ignored) { }
+        try {
+            if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission("android.permission.POST_NOTIFICATIONS") != android.content.pm.PackageManager.PERMISSION_GRANTED)
+                requestPermissions(new String[]{"android.permission.POST_NOTIFICATIONS"}, 9);
+        } catch (Throwable ignored) { }
         if (saved != null) web.restoreState(saved);
         else web.loadUrl("file:///android_asset/index.html");
     }
@@ -105,7 +143,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
-        UpdateJob.cancelNote(this);
+        try { UpdateJob.cancelNote(this); } catch (Throwable ignored) { }
         if (waitingPerm) {
             waitingPerm = false;
             if (canInstall()) downloadAndInstall(pendingUpdate);
@@ -246,6 +284,29 @@ public class MainActivity extends Activity {
         @JavascriptInterface
         public void checkUpdate() {
             new Thread(() -> jsRaw("window.onUpdateInfo&&onUpdateInfo(" + UpdateJob.latest() + ")")).start();
+        }
+
+        /** The report from the last crash, once (then it's cleared). */
+        @JavascriptInterface
+        public String lastCrash() {
+            File f = new File(getFilesDir(), "crash.txt");
+            if (!f.exists()) return "";
+            try (java.util.Scanner sc = new java.util.Scanner(f, "UTF-8").useDelimiter("\\A")) {
+                String s = sc.hasNext() ? sc.next() : "";
+                f.delete();
+                return s.length() > 6000 ? s.substring(0, 6000) : s;
+            } catch (Exception e) { f.delete(); return ""; }
+        }
+
+        /** Android's share sheet (text it, email it...). */
+        @JavascriptInterface
+        public void share(String subject, String text) {
+            runOnUiThread(() -> {
+                try {
+                    startActivity(Intent.createChooser(new Intent(Intent.ACTION_SEND).setType("text/plain")
+                            .putExtra(Intent.EXTRA_SUBJECT, subject).putExtra(Intent.EXTRA_TEXT, text), "Send to Fritz"));
+                } catch (Exception e) { toast("Couldn't open sharing"); }
+            });
         }
 
         /** Why the last in-app update failed, if it did (cleared when one succeeds). */
