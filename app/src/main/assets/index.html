@@ -1235,7 +1235,7 @@ window.onUpdateProgress = pct => {
 window.onUpdateStage = (stage, msg) => {
   const m = document.getElementById('updMsg'), f = document.getElementById('force');
   if (stage === 'perm') { if (m) m.innerHTML = 'Android needs your OK once: turn on <b>Allow from this source</b>, then come back to Money Tiles.'; }
-  else if (stage === 'install') { if (m) m.innerHTML = 'Almost done: tap <b>Update</b> on the next screen.'; }
+  else if (stage === 'install') { if (m) m.innerHTML = 'Downloaded. Tap <b>Update</b> on Android\'s screen. (If it didn\'t open, tap the download in your notifications.)'; const f = document.getElementById('force'); if (f) { const b = f.querySelector('#fUpd'); b.disabled = false; b.style.opacity = 1; b.innerHTML = `${ic('restore')}Open the installer again`; f.querySelector('#fWeb').classList.remove('hidden'); } }
   else if (stage === 'fail') {
     if (m) m.textContent = msg || "The update didn't finish.";
     if (f) { const b = f.querySelector('#fUpd'); b.disabled = false; b.style.opacity = 1; b.innerHTML = `${ic('restore')}Try again`; f.querySelector('#fLater').classList.remove('hidden'); f.querySelector('#fWeb').classList.remove('hidden'); f.querySelector('#fBar').classList.add('hidden'); }
