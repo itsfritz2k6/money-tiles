@@ -1210,13 +1210,22 @@ function forceUpdate(info, latest, cur) {
     ${notes ? `<ul>${notes}</ul>` : ''}
     <button class="btn" id="fUpd">${ic('dl')}Update now</button>
     <p class="hint" id="updMsg" style="text-align:center"></p><div class="pb hidden" id="fBar"><i id="updBar" style="width:0%"></i></div>
+    <button class="btn soft hidden" id="fWeb">${ic('dl')}Download it in the browser instead</button>
     <button class="flater hidden" id="fLater">Not now · remind me in an hour</button></div>`;
   document.body.appendChild(el);
   el.querySelector('#fUpd').onclick = () => {
+    S.updTry = {tag: latest, from: cur, at: Date.now(), n: (S.updTry && S.updTry.tag === latest ? S.updTry.n || 0 : 0) + 1}; save();
     el.querySelector('#fUpd').disabled = true; el.querySelector('#fUpd').style.opacity = .6;
     el.querySelector('#fBar').classList.remove('hidden'); el.querySelector('#updMsg').textContent = 'Downloading…';
     Native.installUpdate(info.url);
   };
+  el.querySelector('#fWeb').onclick = () => { if (Native.openDownload) Native.openDownload(info.url); el.querySelector('#updMsg').innerHTML = 'When it finishes downloading, tap it and choose <b>Update</b>. Your entries stay.'; };
+  // Back here on the old version right after trying? Then that try didn't take: say why and offer other ways.
+  const tr = S.updTry;
+  if (tr && tr.tag === latest && tr.from === cur && Date.now() - tr.at < 2 * 36e5) {
+    const why = (Native.lastInstall && Native.lastInstall()) || "The last update didn't finish.";
+    window.onUpdateStage('fail', why + ' Try again, or download it in the browser.');
+  }
   el.querySelector('#fLater').onclick = () => { S.updSnoozeUntil = Date.now() + 36e5; save(); el.remove(); };
 }
 window.onUpdateProgress = pct => {
@@ -1229,7 +1238,7 @@ window.onUpdateStage = (stage, msg) => {
   else if (stage === 'install') { if (m) m.innerHTML = 'Almost done: tap <b>Update</b> on the next screen.'; }
   else if (stage === 'fail') {
     if (m) m.textContent = msg || "The update didn't finish.";
-    if (f) { const b = f.querySelector('#fUpd'); b.disabled = false; b.style.opacity = 1; b.innerHTML = `${ic('restore')}Try again`; f.querySelector('#fLater').classList.remove('hidden'); }
+    if (f) { const b = f.querySelector('#fUpd'); b.disabled = false; b.style.opacity = 1; b.innerHTML = `${ic('restore')}Try again`; f.querySelector('#fLater').classList.remove('hidden'); f.querySelector('#fWeb').classList.remove('hidden'); f.querySelector('#fBar').classList.add('hidden'); }
   }
 };
 
