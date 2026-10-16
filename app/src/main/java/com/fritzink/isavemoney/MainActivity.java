@@ -1,10 +1,12 @@
 package com.fritzink.isavemoney;
 
 import android.app.Activity;
+import android.app.DownloadManager;
 import android.app.PendingIntent;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.content.pm.PackageInstaller;
+import android.database.Cursor;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
@@ -149,44 +151,56 @@ public class MainActivity extends Activity {
         runOnUiThread(() -> web.evaluateJavascript(code, null));
     }
 
-    /** Streams the APK straight into an install session, then hands Android the confirm step. */
+    /**
+     * The phone's own download manager fetches the new version (with its usual notification), then Android's
+     * standard "Update this app?" screen opens from here, while the app is in front. That is the most dependable
+     * way to update an app that isn't from the Play Store.
+     */
     private void downloadAndInstall(String url) {
+        DownloadManager dm = getSystemService(DownloadManager.class);
+        File old = new File(getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), "MoneyTiles-update.apk");
+        if (old.exists()) old.delete();
+        long id;
+        try {
+            id = dm.enqueue(new DownloadManager.Request(Uri.parse(url))
+                    .setTitle("Money Tiles update")
+                    .setDescription("Downloading the new version")
+                    .setMimeType("application/vnd.android.package-archive")
+                    .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE)
+                    .setDestinationInExternalFilesDir(this, Environment.DIRECTORY_DOWNLOADS, "MoneyTiles-update.apk"));
+        } catch (Exception e) {
+            js("onUpdateStage('fail'," + JSONObject.quote("The phone couldn't start the download.") + ")");
+            return;
+        }
         new Thread(() -> {
-            PackageInstaller.Session session = null;
-            try {
-                HttpURLConnection c = (HttpURLConnection) new URL(url).openConnection();
-                c.setInstanceFollowRedirects(true);
-                c.setConnectTimeout(15000);
-                c.setReadTimeout(30000);
-                c.setRequestProperty("User-Agent", "MoneyTiles");
-                int len = c.getContentLength();
-                PackageInstaller pi = getPackageManager().getPackageInstaller();
-                PackageInstaller.SessionParams params = new PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL);
-                params.setAppPackageName(getPackageName());
-                int sid = pi.createSession(params);
-                session = pi.openSession(sid);
-                try (InputStream in = c.getInputStream(); OutputStream out = session.openWrite("base.apk", 0, len > 0 ? len : -1)) {
-                    byte[] buf = new byte[16384];
-                    long got = 0;
-                    int n, lastPct = -1;
-                    while ((n = in.read(buf)) > 0) {
-                        out.write(buf, 0, n);
-                        got += n;
-                        int pct = len > 0 ? (int) (got * 100 / len) : 0;
-                        if (pct != lastPct) { lastPct = pct; jsRaw("window.onUpdateProgress&&onUpdateProgress(" + pct + ")"); }
+            int lastPct = -1;
+            for (int tries = 0; tries < 1200; tries++) {        // up to 10 minutes
+                try { Thread.sleep(500); } catch (InterruptedException ignored) { }
+                try (Cursor c = dm.query(new DownloadManager.Query().setFilterById(id))) {
+                    if (c == null || !c.moveToFirst()) break;
+                    int st = c.getInt(c.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS));
+                    long got = c.getLong(c.getColumnIndexOrThrow(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR));
+                    long all = c.getLong(c.getColumnIndexOrThrow(DownloadManager.COLUMN_TOTAL_SIZE_BYTES));
+                    int pct = all > 0 ? (int) (got * 100 / all) : 0;
+                    if (pct != lastPct) { lastPct = pct; jsRaw("window.onUpdateProgress&&onUpdateProgress(" + pct + ")"); }
+                    if (st == DownloadManager.STATUS_SUCCESSFUL) {
+                        Uri apk = dm.getUriForDownloadedFile(id);
+                        runOnUiThread(() -> {
+                            try {
+                                startActivity(new Intent(Intent.ACTION_VIEW)
+                                        .setDataAndType(apk, "application/vnd.android.package-archive")
+                                        .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION));
+                                js("onUpdateStage('install')");
+                            } catch (Exception e) {
+                                js("onUpdateStage('fail'," + JSONObject.quote("The phone wouldn't open the installer. Use the browser download below.") + ")");
+                            }
+                        });
+                        return;
                     }
-                    session.fsync(out);
-                }
-                Intent done = new Intent(this, InstallReceiver.class).setAction(InstallReceiver.ACTION);
-                int flags = PendingIntent.FLAG_UPDATE_CURRENT | (Build.VERSION.SDK_INT >= 31 ? PendingIntent.FLAG_MUTABLE : 0);
-                PendingIntent cb = PendingIntent.getBroadcast(this, 1, done, flags);
-                session.commit(cb.getIntentSender());
-                session.close();
-                js("onUpdateStage('install')");
-            } catch (Exception e) {
-                if (session != null) session.abandon();
-                js("onUpdateStage('fail'," + JSONObject.quote("The download didn't finish. Check the internet and try again.") + ")");
+                    if (st == DownloadManager.STATUS_FAILED) break;
+                } catch (Exception e) { break; }
             }
+            js("onUpdateStage('fail'," + JSONObject.quote("The download didn't finish. Check the internet and try again.") + ")");
         }).start();
     }
 
