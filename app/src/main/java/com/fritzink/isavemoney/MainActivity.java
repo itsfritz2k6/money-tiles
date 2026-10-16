@@ -34,6 +34,7 @@ import java.nio.charset.StandardCharsets;
 
 /** The whole app is the offline page in assets/index.html; this activity hosts it and gives it file saving and self-updates. */
 public class MainActivity extends Activity {
+    private static MainActivity live;   // the visible page, for update results that arrive in the background
     private static final int REQ_FILE = 7;
     private static final String ACTION_INSTALLED = "com.fritzink.isavemoney.UPDATE_RESULT";
     private WebView web;
@@ -73,6 +74,7 @@ public class MainActivity extends Activity {
         });
         setContentView(web);
         // background check + notification for new versions; the page itself blocks use until she updates
+        live = this;
         UpdateJob.schedule(this);
         UpdateJob.cancelNote(this);
         if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission("android.permission.POST_NOTIFICATIONS") != android.content.pm.PackageManager.PERMISSION_GRANTED)
@@ -107,6 +109,17 @@ public class MainActivity extends Activity {
             if (canInstall()) downloadAndInstall(pendingUpdate);
             else js("onUpdateStage('fail','Money Tiles needs permission to install its own updates.')");
         }
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (live == this) live = null;
+        super.onDestroy();
+    }
+
+    static void tellPage(String code) {
+        MainActivity a = live;
+        if (a != null) a.runOnUiThread(() -> a.web.evaluateJavascript("window.onUpdateStage&&(" + code + ")", null));
     }
 
     @Override
@@ -164,9 +177,9 @@ public class MainActivity extends Activity {
                     }
                     session.fsync(out);
                 }
-                Intent done = new Intent(this, MainActivity.class).setAction(ACTION_INSTALLED);
+                Intent done = new Intent(this, InstallReceiver.class).setAction(InstallReceiver.ACTION);
                 int flags = PendingIntent.FLAG_UPDATE_CURRENT | (Build.VERSION.SDK_INT >= 31 ? PendingIntent.FLAG_MUTABLE : 0);
-                PendingIntent cb = PendingIntent.getActivity(this, 1, done, flags);
+                PendingIntent cb = PendingIntent.getBroadcast(this, 1, done, flags);
                 session.commit(cb.getIntentSender());
                 session.close();
                 js("onUpdateStage('install')");
@@ -219,6 +232,19 @@ public class MainActivity extends Activity {
         @JavascriptInterface
         public void checkUpdate() {
             new Thread(() -> jsRaw("window.onUpdateInfo&&onUpdateInfo(" + UpdateJob.latest() + ")")).start();
+        }
+
+        /** Why the last in-app update failed, if it did (cleared when one succeeds). */
+        @JavascriptInterface
+        public String lastInstall() {
+            return getSharedPreferences("updates", MODE_PRIVATE).getString("fail", "");
+        }
+
+        /** Fallback: let the browser download the new version and Android's own installer handle it. */
+        @JavascriptInterface
+        public void openDownload(String url) {
+            if (!url.startsWith("https://github.com/itsfritz2k6/money-tiles/")) return;
+            runOnUiThread(() -> { try { startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url))); } catch (Exception e) { toast("No browser found"); } });
         }
 
         @JavascriptInterface
