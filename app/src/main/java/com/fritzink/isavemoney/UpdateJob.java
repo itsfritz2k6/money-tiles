@@ -108,12 +108,14 @@ public class UpdateJob extends JobService {
     @Override
     public boolean onStartJob(JobParameters params) {
         new Thread(() -> {
+          try {
             JSONObject r = latest();
             String tag = r.optString("tag");
             if (r.optBoolean("ok") && newer(tag, installed(this))) {
                 SharedPreferences sp = getSharedPreferences("updates", MODE_PRIVATE);
                 if (!tag.equals(sp.getString("notified", ""))) { notifyUpdate(tag); sp.edit().putString("notified", tag).apply(); }
             }
+          } catch (Throwable ignored) { }   // a background check must never crash the app
             jobFinished(params, false);
         }).start();
         return true;
