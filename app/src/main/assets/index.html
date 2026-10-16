@@ -1321,6 +1321,13 @@ function boot() {
   $('#mLbl').onclick = () => { curM = today().slice(0, 7); refresh(); };
   load(); syncPredictions(); renderHome();
   setTimeout(() => checkUpdate(false), 1500);
+  // The phone app keeps a report if it ever crashed; show it once so she can send it to Fritz.
+  const crash = window.Native && Native.lastCrash ? Native.lastCrash() : '';
+  if (crash) setTimeout(() => {
+    const el = pop(`<h3>Money Tiles closed unexpectedly</h3><p>Sorry about that. Your entries are safe. Please send this to Fritz so he can fix it.</p><div class="dlgb"><button data-n>Close</button><button data-y>Send to Fritz</button></div>`, {dlg: true});
+    el.querySelector('[data-n]').onclick = () => closeTop();
+    el.querySelector('[data-y]').onclick = () => { Native.share('Money Tiles crash report', crash); closeTop(); };
+  }, 600);
   setTimeout(() => { const s = $('#splash'); if (!s) return; s.style.opacity = 0; setTimeout(() => s.remove(), 400); }, 900);
 }
 document.addEventListener('visibilitychange', () => { if (!document.hidden && S) { refresh(); if (Date.now() - (S.updLast || 0) > 6e5) checkUpdate(false); } });
