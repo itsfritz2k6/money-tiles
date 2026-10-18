@@ -325,8 +325,10 @@ const ord = n => n + (n % 10 === 1 && n % 100 !== 11 ? 'st' : n % 10 === 2 && n 
 function fmt(n) { return S.currency + Math.abs(r2(n)).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}); }
 const MINUS = '−';
 // a tile's total: "both" tiles show the difference, green when more came in
-const totTxt = (t, v) => t.kind === 'both' ? (v < 0 ? MINUS : '+') + fmt(v) : signed(v, t.kind);
-const totCls = (t, v) => t.kind === 'both' ? (v < 0 ? 'red' : 'green') : kindClass(t.kind);
+// money-out tiles count spending as positive, so a negative total there means more came back than went out
+const totUp = (t, v) => t.kind === 'out' ? v < 0 : v >= 0;
+const totTxt = (t, v) => t.kind === 'check' ? fmt(v) : (totUp(t, v) ? '+' : MINUS) + fmt(v);
+const totCls = (t, v) => t.kind === 'check' ? 'rg' : totUp(t, v) ? 'green' : 'red';
 function signed(n, kind) { return kind === 'in' ? '+' + fmt(n) : kind === 'out' ? MINUS + fmt(n) : fmt(n); }
 const kindClass = k => k === 'in' ? 'green' : k === 'out' ? 'red' : 'rg';
 function money(v) {
@@ -432,7 +434,8 @@ function occ(it, s, e) {
 const amtOf = (it, d) => it.amtOn && it.amtOn[d] != null ? it.amtOn[d] : it.amt;
 // Which way an entry's money goes: in/out tiles fix it; "both" tiles let each entry choose.
 const dirDefault = T => T && (T.kind === 'in' || T.kind === 'out') ? T.kind : (T && T.defDir) || 'out';
-const dirOf = (T, it) => T && (T.kind === 'in' || T.kind === 'out') ? T.kind : it.dir || dirDefault(T);
+const dirOf = (T, it) => it.dir || dirDefault(T);
+const isMoney = T => T && (T.kind === 'in' || T.kind === 'out' || T.kind === 'both');
 function entries(tileId, s, e) {
   const out = [], T = tileOf(tileId);
   for (const it of S.items) if (it.tile === tileId) for (const o of occ(it, s, e)) out.push({it, d: o.d, n: o.n, amt: amtOf(it, o.d), dir: dirOf(T, it), done: !!(it.done || {})[o.d]});
@@ -441,7 +444,7 @@ function entries(tileId, s, e) {
 function tileTotals(t, m) {
   const list = entries(t.id, mStart(m), mEnd(m));
   const inSum = sum(list.filter(x => x.dir === 'in'), x => x.amt), outSum = sum(list.filter(x => x.dir === 'out'), x => x.amt);
-  const total = t.kind === 'both' ? r2(inSum - outSum) : sum(list, x => x.amt);
+  const total = t.kind === 'check' ? sum(list, x => x.amt) : t.kind === 'out' ? r2(outSum - inSum) : r2(inSum - outSum);
   const paid = sum(list.filter(x => x.done), x => x.amt);
   return {list, total, inSum, outSum, paid, left: r2(total - paid), count: list.length, doneCount: list.filter(x => x.done).length};
 }
@@ -508,7 +511,7 @@ function renderHome() {
   $('#tgrid').innerHTML = tt.filter(({t}) => t.kind !== 'pay').map(({t, x}) => `<div class="tg"><small>${esc(t.name)}</small><b class="${totCls(t, x.total)}">${totTxt(t, x.total)}</b>${t.kind === 'check' ? `<i>${fmt(x.paid)} paid</i>` : `<i>${x.count} ${x.count === 1 ? 'entry' : 'entries'}</i>`}</div>`).join('');
   $('#tiles').innerHTML = tt.map(({t, x}) => t.kind === 'pay' ? payTileHTML(t) : `<button class="tile" data-t="${t.id}"><div class="ti">${cute(t.icon, 46)}</div><div class="tn">${esc(t.name)}</div>
       <div class="tt ${totCls(t, x.total)}">${totTxt(t, x.total)}</div>
-      ${t.kind === 'check' ? `<div class="ts">${x.doneCount} of ${x.count} paid${(() => { const n = overdueBefore(t, curM).length + x.list.filter(e => !e.done && e.d < today()).length; return n ? ` · <span class="red">${n} overdue</span>` : ''; })()}</div><div class="pb"><i style="width:${x.total > 0 ? x.paid / x.total * 100 : 0}%"></i></div>` : t.kind === 'both' ? `<div class="ts"><span class="green">+${fmt(x.inSum)}</span> · <span class="red">${MINUS}${fmt(x.outSum)}</span></div>` : `<div class="ts">${x.count} ${x.count === 1 ? 'entry' : 'entries'} this month</div>`}
+      ${t.kind === 'check' ? `<div class="ts">${x.doneCount} of ${x.count} paid${(() => { const n = overdueBefore(t, curM).length + x.list.filter(e => !e.done && e.d < today()).length; return n ? ` · <span class="red">${n} overdue</span>` : ''; })()}</div><div class="pb"><i style="width:${x.total > 0 ? x.paid / x.total * 100 : 0}%"></i></div>` : t.kind === 'both' || (x.inSum && x.outSum) ? `<div class="ts"><span class="green">+${fmt(x.inSum)}</span> · <span class="red">${MINUS}${fmt(x.outSum)}</span></div>` : `<div class="ts">${x.count} ${x.count === 1 ? 'entry' : 'entries'} this month</div>`}
     </button>`).join('') + `<button class="tile add" id="addTile"><span class="plus">${ic('add')}</span>Add a tile</button>`;
   document.querySelectorAll('#tiles [data-t]').forEach(b => b.onclick = () => openTile(b.dataset.t));
   $('#addTile').onclick = () => tileForm();
@@ -531,9 +534,8 @@ function openTile(id) {
         <div class="pb"><i style="width:${x.total > 0 ? x.paid / x.total * 100 : 0}%"></i></div>
         <div class="split"><span><em class="green">${fmt(x.paid)}</em>Paid · ${x.doneCount}</span><span><em class="red">${fmt(x.left)}</em>Left to pay · ${x.count - x.doneCount}</span></div></div>`;
     } else {
-      h += T.kind === 'both'
-        ? `<div class="big"><small>${esc(T.name)} this month</small><b class="${totCls(T, x.total)}">${totTxt(T, x.total)}</b><div class="split"><span><em class="green">+${fmt(x.inSum)}</em>Added</span><span><em class="red">${MINUS}${fmt(x.outSum)}</em>Spent / taken out</span></div></div>`
-        : `<div class="big"><small>Total ${esc(T.name.toLowerCase())}</small><b class="${kindClass(T.kind)}">${signed(x.total, T.kind)}</b><small>${x.count} ${x.count === 1 ? 'entry' : 'entries'} in ${MON[+curM.slice(5) - 1]}</small></div>`;
+      h += `<div class="big"><small>${esc(T.name)} · ${MON[+curM.slice(5) - 1]}</small><b class="${totCls(T, x.total)}">${totTxt(T, x.total)}</b>
+        ${x.inSum && x.outSum || T.kind === 'both' ? `<div class="split"><span><em class="green">+${fmt(x.inSum)}</em>Added</span><span><em class="red">${MINUS}${fmt(x.outSum)}</em>Taken away</span></div>` : `<small>${x.count} ${x.count === 1 ? 'entry' : 'entries'} in ${MON[+curM.slice(5) - 1]}</small>`}</div>`;
     }
     h += `<div class="seg"><button data-mode="list" class="${mode === 'list' ? 'on' : ''}">${ic('list')}${T.kind === 'check' ? 'Checklist' : 'List'}</button><button data-mode="cal" class="${mode === 'cal' ? 'on' : ''}">${ic('cal')}Calendar</button></div>`;
     if (mode === 'cal') {
@@ -620,7 +622,7 @@ function itemForm(it0, occDate) {
   let scope = oneOK ? 'one' : 'all';
   if (oneOK) it.amt = amtOf(it, occDate);
   const rep = Object.assign({f: '', end: 'never', count: 12, until: ''}, it.rep || {});
-  const both = T.kind === 'both';
+  const both = isMoney(T);   // every money tile can add or take away
   let dir = dirOf(T, it);
   const noun = T.kind === 'in' ? 'earning' : T.kind === 'out' ? 'transaction' : both ? 'entry' : 'bill';
   const ph = T.kind === 'in' ? 'e.g. Paycheck' : T.kind === 'out' ? 'e.g. Groceries' : both ? 'e.g. Put in savings' : 'e.g. Rent';
@@ -628,7 +630,7 @@ function itemForm(it0, occDate) {
   const body = `<div class="form">
     ${oneOK ? `<div class="fld" style="margin-top:14px"><label>Change</label><div class="chips" id="fScope"><button data-s="one">Just ${shortD(occDate)}</button><button data-s="all">Every time</button></div><div class="hint" id="fScopeH"></div></div>` : ''}
     ${it0.pred ? `<div class="summary" style="margin-top:14px">This paycheck is a prediction from your Paycheck tile. When the money lands, type the real amount and save; then it's final.</div>` : ''}
-    ${both ? `<div class="seg" id="fDir" style="margin:14px 0 0"><button data-d="in">+ Money added</button><button data-d="out">${MINUS} Money spent</button></div>` : ''}
+    ${both ? `<div class="seg" id="fDir" style="margin:14px 0 0"><button data-d="in">+ Add money</button><button data-d="out">${MINUS} Take away</button></div>` : ''}
     <div class="amtbox"><span class="sg ${T.kind === 'check' ? 'rg' : kindClass(dir)}" id="fSg">${T.kind === 'check' ? '' : dir === 'in' ? '+' : MINUS}${esc(S.currency)}</span><input id="fAmt" class="${T.kind === 'check' ? 'rg' : kindClass(dir)}" inputmode="decimal" placeholder="0.00" value="${it.amt === '' ? '' : r2(it.amt).toFixed(2)}" autocomplete="off"></div>
     <div class="fld"><label>${T.kind === 'check' ? 'What do you pay?' : 'What is it?'}</label><input id="fName" list="fNames" value="${esc(it.name)}" placeholder="${ph}" autocomplete="off"><datalist id="fNames">${names.map(n => `<option value="${esc(n)}">`).join('')}</datalist></div>
     <div class="fld"><label>${T.kind === 'check' ? 'Due date' : 'Date'}${!isNew && repeats(it) ? ' (first one)' : ''}</label><input type="date" id="fDate" value="${it.date}"></div>
@@ -685,7 +687,7 @@ function itemForm(it0, occDate) {
       if (scope === 'one') {
         const cur = S.items.find(x => x.id === it.id);
         cur.amtOn = Object.assign({}, cur.amtOn, {[occDate]: amt});
-        cur.name = q('#fName').value.trim() || cur.name; cur.note = q('#fNote').value.trim();
+        cur.name = q('#fName').value.trim() || cur.name; cur.note = q('#fNote').value.trim(); if (both) cur.dir = dir;
         save(); closeTop(); refresh(); toast(`${shortD(occDate)} changed to ${fmt(amt)}`); return;
       }
       const date = q('#fDate').value; if (!date) { toast('Pick a date'); return; }
