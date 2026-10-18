@@ -231,6 +231,26 @@ details.more summary{color:var(--rg);font-weight:800;padding:6px 0;cursor:pointe
 .force ul{text-align:left;color:#6d555a;margin:0 0 6px;padding-left:22px;line-height:1.5;font-size:14.5px}
 .force .pb{margin-top:6px;height:9px}
 .force .flater{margin-top:16px;color:var(--mut);font-weight:700;text-decoration:underline}
+.mcal{padding:8px 8px 12px}
+.mhead{display:flex;align-items:center;justify-content:space-between;padding:0 4px 6px;color:var(--rg)}
+.mhead b{font-size:16px;font-weight:800}
+.mhead .ib{background:var(--blush)}
+.mgrid{display:grid;grid-template-columns:repeat(7,1fr) 44px;gap:3px}
+.mdw{text-align:center;font-size:11px;font-weight:800;color:var(--mut);padding-bottom:2px}
+.mc{position:relative;border-radius:10px;padding:4px 0 5px;display:flex;flex-direction:column;align-items:center;min-height:46px;border:2px solid transparent}
+.mc.p0{background:#FBEDEA} .mc.p1{background:#F6E1DC}
+.mc .mn{font-size:10.5px;font-weight:700;color:var(--mut)}
+.mc b{font-size:14.5px;font-weight:800;color:var(--ink)}
+.mc.out{opacity:.4}
+.mc.past b{color:#8a777b}
+.mc.today{border-color:var(--rg);background:#fff}
+.mc.chg::after{content:"";position:absolute;top:4px;right:4px;width:6px;height:6px;border-radius:50%;background:var(--green)}
+.mc.pay{border-color:var(--green)}
+.pin{position:absolute;top:-6px;left:-4px;width:17px;height:17px;border-radius:50%;background:var(--green);color:#fff;font-style:normal;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.mc .hl{font-style:normal;font-size:8.5px;font-weight:800;color:var(--rg)}
+.mw{display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:10px;background:#fff;border:1px solid var(--line)}
+.mw b{font-size:13.5px;font-weight:800} .mw small{font-size:9.5px;color:var(--mut);font-weight:700}
+.mw.ot{border-color:#BFE3CC;background:#F1FAF4} .mw.ot small{color:var(--green)}
 .card2{background:#fff;border:1px solid var(--line);border-radius:18px;padding:14px;margin-top:18px}
 </style>
 </head>
@@ -384,6 +404,11 @@ function load() {
   // 2.2 added the Paycheck calculator tile: give it to existing installs once (she can delete it).
   if (!S.payAdded) { if (!S.tiles.some(t => t.kind === 'pay')) S.tiles.push({id: 'pay', name: 'Paycheck', kind: 'pay', icon: 'calc', pay: defPay()}); S.payAdded = true; save(); }
   if (S.autoUpd == null) S.autoUpd = true;
+  for (const t of S.tiles) if (t.kind === 'pay' && t.pay && t.pay.v === 2 && !t.pay.fix3) {
+    for (const d of [...(t.pay.pre || []), ...(t.pay.post || [])]) if (d.no3 == null && /medical|dental|vision|insur|illness|life/i.test(d.name || '')) d.no3 = true;
+    if (t.pay.start === '2026-09-20' && num(t.pay.lag) === 5) t.pay.lag = 6;   // check date is the Friday (Fritz, 10-18)
+    t.pay.fix3 = true;
+  }
   if (!S.bothMig) { for (const t of S.tiles) if (!['earn', 'tx', 'budget', 'pay', 'biz'].includes(t.id) && (t.kind === 'in' || t.kind === 'out')) toBoth(t); S.bothMig = true; }
   applySeed();
   for (const t of S.tiles) if (t.kind === 'pay' && (!t.pay || t.pay.v !== 2)) { const r = t.pay ? t.pay.rate : 0; t.pay = defPay(); t.pay.rate = r || 0; }
@@ -854,11 +879,19 @@ function planFor(p, per) {
   const hol = holidaysIn(p, per).reduce((t, x) => t + num(x.h || 8), 0); if (hol) out.paid.hol = hol;
   const ex = (p.extra || {})[per.start] || {};
   for (const k of Object.keys(ex)) { if (k === 'bonus') out.bonus = num(ex.bonus); else if (num(ex[k])) out.paid[k] = (out.paid[k] || 0) + num(ex[k]); }
+  out.payday = per.payday; out.third = isThird(p, per.payday);
   return out;
 }
+// Paydays that fall in a month, oldest first (a month can have three with biweekly pay).
+function paydaysIn(p, m) {
+  const s = mStart(m), e = mEnd(m);
+  return payPeriods(p, s, 4).filter(x => x.payday <= e);
+}
+// The 3rd paycheck in a month skips the deductions marked "no3" (insurance only comes out of two checks a month).
+const isThird = (p, payday) => paydaysIn(p, payday.slice(0, 7)).findIndex(x => x.payday === payday) >= 2;
 function openPay(id) {
   const t = tileOf(id); if (!t.pay || t.pay.v !== 2) { t.pay = defPay(); save(); }
-  let viewStart = null;
+  let calM = today().slice(0, 7);
   const el = sheet(t.name, '', {icon: t.icon, head: `<button class="ib" data-set aria-label="Pay settings">${ic('gear')}</button>`});
   el.querySelector('[data-set]').onclick = () => paySettings(id);
   const draw = () => {
@@ -869,48 +902,52 @@ function openPay(id) {
       el.querySelector('[data-go]').onclick = () => paySettings(id);
       return;
     }
-    const t0 = today(), cur = periodAt(p, t0), per = viewStart ? periodAt(p, viewStart) : cur, isCur = per.start === cur.start;
-    const pl = planFor(p, per), c = payFor(p, pl), cap = num(p.otAfter) || 40;
-    const hol = holidaysIn(p, per), holSet = Object.fromEntries(hol.map(x => [x.date, x]));
-    let grid = '';
-    for (let wi = 0; wi < weeksIn(p); wi++) {
-      const ws = addDays(per.start, 7 * wi), we = addDays(ws, 6), wh = pl.w[wi], ot = Math.max(0, wh - cap);
-      let soFar = 0; for (let i = 0; i < 7; i++) { const d = addDays(ws, i); if (d <= t0) soFar += dayHours(p, d); }
-      const inWeek = t0 >= ws && t0 <= we;
-      grid += `<div class="pw"><div class="pwh"><b>Week ${wi + 1} · ${shortD(ws)} – ${shortD(we)}</b><span>${hrs(wh)}${ot ? ` · <em>${hrs(ot)} OT</em>` : ''}</span></div>
-        ${inWeek ? `<div class="hint" style="margin:0 0 6px">So far this week: <b>${hrs(soFar)}</b> of ${hrs(wh)}</div>` : ''}
-        <div class="pdays">${[0, 1, 2, 3, 4, 5, 6].map(i => { const d = addDays(ws, i), hh = dayHours(p, d), x = pd(d);
-          return `<button class="pday ${d === t0 ? 'today' : ''} ${d < t0 ? 'past' : ''} ${changedDay(p, d) ? 'chg' : ''} ${i === 0 || i === 6 ? 'wkd' : ''} ${holSet[d] ? 'hol' : ''}" data-day="${d}"><small>${DOW[x.getDay()].slice(0, 2)}</small><span class="dn2">${x.getDate()}</span><b>${hh ? r2(hh) : 'off'}</b>${num((p.dayPto || {})[d]) ? '<i class="ptoi">PTO</i>' : holSet[d] ? '<i class="ptoi">HOL</i>' : ''}</button>`; }).join('')}</div></div>`;
+    const t0 = today(), cap = num(p.otAfter) || 40, days = num(p.every) || 14;
+    const next = payPeriods(p, t0, 1)[0], nc = payFor(p, planFor(p, next)), cur = periodAt(p, t0);
+    // month calendar: Sun–Sat rows + the week's total; paydays pinned
+    const [y, mo] = calM.split('-').map(Number), first = mStart(calM), last = mEnd(calM);
+    const gStart = addDays(first, -pd(first).getDay()), gEnd = addDays(last, 6 - pd(last).getDay());
+    const pays = {}; for (const x of payPeriods(p, gStart, 4)) if (x.payday <= gEnd) pays[x.payday] = x;
+    const hols = Object.fromEntries((p.holidays || []).map(x => [x.date, x]));
+    let rows = '';
+    for (let ws = gStart; ws <= gEnd; ws = addDays(ws, 7)) {
+      let wk = 0, cells = '';
+      for (let i = 0; i < 7; i++) {
+        const d = addDays(ws, i), hh = dayHours(p, d), x = pd(d), out = d.slice(0, 7) !== calM, pay = pays[d];
+        wk += hh;
+        const par = Math.floor(dBetween(p.start, d) / days) % 2 ? 'p1' : 'p0';
+        cells += `<button class="mc ${par} ${out ? 'out' : ''} ${d === t0 ? 'today' : ''} ${d < t0 ? 'past' : ''} ${changedDay(p, d) ? 'chg' : ''} ${pay ? 'pay' : ''}" data-day="${d}">
+          <span class="mn">${x.getDate()}</span><b>${hh ? r2(hh) : '·'}</b>${pay ? '<i class="pin">$</i>' : hols[d] ? '<i class="hl">HOL</i>' : num((p.dayPto || {})[d]) ? '<i class="hl">PTO</i>' : ''}</button>`;
+      }
+      const ot = Math.max(0, wk - cap);
+      rows += cells + `<div class="mw ${ot ? 'ot' : ''}"><b>${r2(wk)}</b>${ot ? `<small>+${r2(ot)} OT</small>` : '<small>hrs</small>'}</div>`;
     }
-    const todayIn = t0 >= per.start && t0 <= per.end;
-    const bump = n => { const pl2 = JSON.parse(JSON.stringify(pl)); pl2.w[pl2.w.length - 1] += n; return payFor(p, pl2).net - c.net; };
-    const nexts = payPeriods(p, addDays(cur.end, 1), 5).filter(x => x.start !== cur.start);
+    const monthPays = paydaysIn(p, calM);
     el.querySelector('.sb').innerHTML = `
-      <div class="big"><small>${isCur ? 'This pay period' : 'Pay period'} · ${shortD(per.start)} – ${shortD(per.end)}</small><b class="green">+${fmt(c.net)}</b>
-        <small>take-home · paid ${dayH(per.payday)} · ${hrs(c.worked)}${c.ot ? ` · ${hrs(c.ot)} overtime` : ''}</small>
-        <div class="pnav"><button data-pp="-1">${ic('left')}Earlier</button>${isCur ? '' : '<button data-pp="0">Today</button>'}<button data-pp="1">Later${ic('right')}</button></div></div>
-      ${todayIn ? `<div class="list quick"><div><b>Today · ${dayH(t0)}</b><span>${hrs(dayHours(p, t0))}</span></div>
-        <div class="hint" style="margin:2px 0 8px">Worked extra? Tap to add it. Tap a day below to type exact hours.</div>
-        <div class="chips"><button data-add="-1">${MINUS}1 hr</button><button data-add="1">+1 hr</button><button data-add="2">+2 hrs</button><button data-add="4">+4 hrs</button><button data-dayed="${t0}">Type it</button></div></div>` : ''}
-      <div class="list pgrid">${grid}
-        <div class="hint" style="margin:8px 2px 2px">Tap any day to change its hours. Gray days are done; the outlined one is today.${hol.length ? ` <b>${hol.map(x => esc(x.name)).join(', ')}</b>: 8 hrs holiday pay on top of what you work (double pay).` : ''}</div></div>
-      <div class="list" style="padding:10px 16px"><div class="brow" style="padding:4px 0;border:0"><span>One more hour ${pl.w[pl.w.length - 1] >= cap ? '(overtime)' : ''}</span><b class="green">+${fmt(bump(1))}</b></div>
-        <div class="brow" style="padding:4px 0;border:0"><span>An extra 8-hour shift</span><b class="green">+${fmt(bump(8))}</b></div></div>
-      <div class="list" style="padding:0"><details class="more" style="margin:0"><summary style="padding:12px 16px">See every line of this check</summary>${breakdownHTML(c, p)}</details></div>
-      <div class="dayh"><span>Next paychecks</span></div>
-      <div class="list">${nexts.map(x => { const cc = payFor(p, planFor(p, x)), hx = holidaysIn(p, x);
-        return `<div class="row" data-goper="${x.start}"><div class="bub in">$</div><div class="mid"><div class="nm">${dayH(x.payday)}</div><div class="sub"><span>${shortD(x.start)}–${shortD(x.end)} · ${hrs(cc.worked)}${cc.ot ? `, ${hrs(cc.ot)} OT` : ''}</span>${hx.map(z => `<span class="tag">${esc(z.name)}</span>`).join('')}</div></div><div class="amt green">+${fmt(cc.net)}</div><span class="pen">${ic('right')}</span></div>`; }).join('')}</div>
+      <div class="big"><small>Next payday · ${dayH(next.payday)}</small><b class="green">+${fmt(nc.net)}</b>
+        <small>for ${shortD(next.start)} – ${shortD(next.end)} · ${hrs(nc.worked)}${nc.ot ? ` · ${hrs(nc.ot)} overtime` : ''}${planFor(p, next).third ? ' · no insurance this one' : ''}</small>
+        <button class="btn soft" data-check="${next.start}" style="margin-top:10px">See every line of this check</button></div>
+      <div class="list quick"><div><b>Today · ${dayH(t0)}</b><span>${hrs(dayHours(p, t0))}</span></div>
+        <div class="chips" style="margin-top:8px"><button data-add="-1">${MINUS}1 hr</button><button data-add="1">+1 hr</button><button data-add="2">+2 hrs</button><button data-add="4">+4 hrs</button><button data-day="${t0}">Type it</button></div></div>
+      <div class="list mcal">
+        <div class="mhead"><button class="ib" data-cm="-1">${ic('left')}</button><b>${MON[mo - 1]} ${y}</b><button class="ib" data-cm="1">${ic('right')}</button></div>
+        <div class="mgrid">${['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(d => `<span class="mdw">${d}</span>`).join('')}<span class="mdw">Week</span>${rows}</div>
+        <div class="hint" style="margin:8px 2px 0"><span class="pin" style="position:static;display:inline-flex">$</span> payday. The two shades are your two-week pay periods. Tap any day to plan or fix its hours; a green dot means you changed it.</div>
+      </div>
+      <div class="dayh"><span>Paydays in ${MON[mo - 1]}</span><span class="mut" style="font-weight:700">${monthPays.length ? '+' + fmt(monthPays.reduce((s, x) => s + payFor(p, planFor(p, x)).net, 0)) : ''}</span></div>
+      <div class="list">${monthPays.map(x => { const pl = planFor(p, x), cc = payFor(p, pl);
+        return `<div class="row" data-check="${x.start}"><div class="bub in">$</div><div class="mid"><div class="nm">${dayH(x.payday)}</div><div class="sub"><span>for ${shortD(x.start)}–${shortD(x.end)} · ${hrs(cc.worked)}${cc.ot ? `, ${hrs(cc.ot)} OT` : ''}</span>${pl.third ? '<span class="tag">3rd check: no insurance</span>' : ''}${holidaysIn(p, x).map(z => `<span class="tag">${esc(z.name)}</span>`).join('')}</div></div><div class="amt green">+${fmt(cc.net)}</div><span class="pen">${ic('right')}</span></div>`; }).join('') || '<div class="empty" style="padding:14px">No payday this month.</div>'}</div>
       <div class="list" style="padding:12px 16px"><div class="brow" style="padding:0;border:0"><span><b>Your usual week</b><br><span class="mut" style="font-size:13px">${schedText(p)}</span></span><button class="btn soft" data-sched style="width:auto;margin:0;padding:10px 16px">Change</button></div></div>
       <div class="list" style="padding:0"><details class="more" style="margin:0"><summary style="padding:12px 16px">Your pay, explained</summary><div style="margin-top:-12px">${explainHTML(p)}</div></details></div>
       <div class="list" style="padding:0"><details class="more" style="margin:0"><summary style="padding:12px 16px">Real pay stubs (${(p.stubs || []).length})</summary>${stubsHTML(p)}<div class="form"><button class="btn soft" data-stub>${ic('add')}Add a stub</button></div></details></div>
       <div style="height:20px"></div>`;
     const q = s => el.querySelector(s);
-    el.querySelectorAll('[data-pp]').forEach(b => b.onclick = () => { const n = +b.dataset.pp; viewStart = n === 0 ? null : addDays(per.start, n * (num(p.every) || 14)); if (viewStart && viewStart <= cur.start && viewStart >= cur.start) viewStart = null; draw(); el.querySelector('.sb').scrollTop = 0; });
-    el.querySelectorAll('[data-goper]').forEach(b => b.onclick = () => { viewStart = b.dataset.goper; draw(); el.querySelector('.sb').scrollTop = 0; });
-    el.querySelectorAll('[data-day],[data-dayed]').forEach(b => b.onclick = () => dayEditor(id, b.dataset.day || b.dataset.dayed));
+    el.querySelectorAll('[data-cm]').forEach(b => b.onclick = () => { calM = mShift(calM, +b.dataset.cm); draw(); });
+    el.querySelectorAll('[data-day]').forEach(b => b.onclick = () => dayEditor(id, b.dataset.day));
+    el.querySelectorAll('[data-check]').forEach(b => b.onclick = () => checkSheet(id, b.dataset.check));
     el.querySelectorAll('[data-add]').forEach(b => b.onclick = () => {
       const v = Math.max(0, dayHours(p, t0) + +b.dataset.add); p.days = p.days || {}; p.days[t0] = v;
-      save(); syncPredictions(); refresh(); toast(`Today: ${hrs(v)}. This check is now +${fmt(payFor(p, planFor(p, cur)).net)}`);
+      save(); syncPredictions(); refresh(); toast(`Today: ${hrs(v)}. That check is now +${fmt(payFor(p, planFor(p, cur)).net)}`);
     });
     q('[data-sched]').onclick = () => scheduleSheet(id);
     el.querySelectorAll('[data-stubi]').forEach(b => b.onclick = () => stubForm(id, +b.dataset.stubi));
@@ -918,6 +955,15 @@ function openPay(id) {
   };
   el._draw = draw; draw();
   return el;
+}
+// One paycheck in full: its two weeks of hours and every line of the check.
+function checkSheet(id, start) {
+  const p = tileOf(id).pay, per = periodAt(p, start), pl = planFor(p, per), c = payFor(p, pl), cap = num(p.otAfter) || 40;
+  const wk = pl.w.map((h, i) => `<div class="brow"><span>Week ${i + 1} · ${shortD(addDays(per.start, 7 * i))} – ${shortD(addDays(per.start, 7 * i + 6))}</span><b>${hrs(h)}${h > cap ? ` <span class="green">(${hrs(h - cap)} OT)</span>` : ''}</b></div>`).join('');
+  sheet(`Paycheck · ${shortD(per.payday)}`, `<div class="big"><small>Paid ${dayH(per.payday)}</small><b class="green">+${fmt(c.net)}</b><small>for ${nice(per.start)} – ${nice(per.end)}</small></div>
+    ${pl.third ? `<div class="summary" style="margin:12px 12px 0">This is the 3rd paycheck in ${MON[+per.payday.slice(5, 7) - 1]}, so no insurance comes out of it.</div>` : ''}
+    <div class="list">${wk}</div><div class="list">${breakdownHTML(c, p)}</div>
+    <div class="hint" style="margin:10px 16px">To change the hours, tap the days on the calendar.</div>`, {icon: 'calc'});
 }
 function schedText(p) {
   const s = schedOf(p), on = s.map((v, i) => num(v) ? `${DOW[i]} ${r2(num(v))}` : '').filter(Boolean);
@@ -991,13 +1037,14 @@ function payFor(p, plan) {
   if (num(plan.bonus)) lines.push({l: plan.bonusName || 'Bonus / other pay', v: num(plan.bonus)});
   const gross = r2(lines.reduce((t, x) => t + x.v, 0));
   const cut = []; let preT = 0, ficaCut = 0, postT = 0;
-  for (const d of p.pre) { const v = r2(d.mode === 'pct' ? gross * numS(d.val) / 100 : numS(d.val)); if (!v || !gross) continue; cut.push({g: 'pre', l: d.name, v}); preT += v; if (d.fica) ficaCut += v; }
+  const skip = d => plan.third && d.no3;
+  for (const d of p.pre) { if (skip(d)) continue; const v = r2(d.mode === 'pct' ? gross * numS(d.val) / 100 : numS(d.val)); if (!v || !gross) continue; cut.push({g: 'pre', l: d.name, v}); preT += v; if (d.fica) ficaCut += v; }
   const ficaBase = Math.max(0, gross - ficaCut + (gross ? num(p.imputed) : 0));
   const fedBase = Math.max(0, ficaBase - (preT - ficaCut));
   const taxes = gross ? [['Social Security', ficaBase * .062], ['Medicare', ficaBase * .0145], ['Federal income tax', fedWithhold(fedBase, perYear(p), p.fed)], [p.state.name || 'State tax', fedBase * num(p.state.pct) / 100]] : [];
   let taxT = 0;
   for (const [l, v0] of taxes) { const v = r2(v0); if (v) { cut.push({g: 'tax', l, v}); taxT += v; } }
-  for (const d of p.post) { const v = r2(d.mode === 'pct' ? gross * numS(d.val) / 100 : numS(d.val)); if (!v || !gross) continue; cut.push({g: 'post', l: d.name, v}); postT += v; }
+  for (const d of p.post) { if (skip(d)) continue; const v = r2(d.mode === 'pct' ? gross * numS(d.val) / 100 : numS(d.val)); if (!v || !gross) continue; cut.push({g: 'post', l: d.name, v}); postT += v; }
   const net = gross ? r2(gross - preT - taxT - postT + numS(p.adj)) : 0;
   return {lines, gross, cut, net, preT: r2(preT), taxT: r2(taxT), postT: r2(postT), hours: r2(worked + paidH), worked: r2(worked), ot: r2(ot)};
 }
@@ -1019,6 +1066,7 @@ function explainHTML(p) {
     ${hol ? `<div class="hint" style="margin:6px 0 2px"><b>Holidays are double pay:</b> you get ${hrs(8)} of holiday pay (${fmt(8 * (num(hol.rate) || rate))}) on top of whatever hours you work that day.</div>` : ''}
     <div class="hint" style="margin:2px 0 6px">Overtime pays a bit more than ${fmt(rate * m)} when you have weekend or other premium hours that week, because the extra half is figured on your average rate.</div>
     ${pre.length ? `<div class="xh">Taken out before taxes, every check</div>${pre.map(d => row(esc(d.name), amt(d))).join('')}` : ''}
+    ${[...p.pre, ...p.post].some(d => d.no3 && numS(d.val)) ? `<div class="hint" style="margin:4px 0 6px"><b>Insurance comes out of 2 checks a month.</b> In a month with a 3rd paycheck, that one skips ${[...p.pre, ...p.post].filter(d => d.no3 && numS(d.val)).map(d => esc(d.name)).join(', ')}.</div>` : ''}
     <div class="xh">Taxes</div>
     ${row('Social Security', '6.2%')}${row('Medicare', '1.45%')}
     ${row('Federal income tax', 'by the IRS tables')}
@@ -1152,6 +1200,7 @@ function rowsHTML(kind, rows) {
   }[kind];
   return rows.map(d => `<div class="ded" data-row="${esc(d.id)}"><div class="dtop"><input class="dn" value="${esc(d.name)}" placeholder="Name"><button class="ib dx" aria-label="Remove">${ic('del')}</button></div><div class="dbot">${cols(d)}</div>
     ${kind === 'paid' ? `<label class="inl" style="margin-top:6px;font-size:13px;font-weight:600"><input type="checkbox" data-k="rr" ${d.rr ? 'checked' : ''} style="width:18px;height:18px;accent-color:var(--rg)">Counts toward the overtime rate (like on-call pay)</label>` : ''}
+    ${kind === 'pre' || kind === 'post' ? `<label class="inl" style="margin-top:6px;font-size:13px;font-weight:600"><input type="checkbox" data-k="no3" ${d.no3 ? 'checked' : ''} style="width:18px;height:18px;accent-color:var(--rg)">Only 2 checks a month (skip a 3rd paycheck)</label>` : ''}
     ${kind === 'pre' ? `<label class="inl" style="margin-top:6px;font-size:13px;font-weight:600"><input type="checkbox" data-k="fica" ${d.fica ? 'checked' : ''} style="width:18px;height:18px;accent-color:var(--rg)">Also lowers Social Security &amp; Medicare (health, dental, vision)</label>` : ''}</div>`).join('');
 }
 function readRows(box, kind) {
