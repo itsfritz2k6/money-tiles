@@ -286,6 +286,12 @@ public class MainActivity extends Activity {
             new Thread(() -> jsRaw("window.onUpdateInfo&&onUpdateInfo(" + UpdateJob.latest() + ")")).start();
         }
 
+        /** Matches the phone's top bar to the chosen theme. */
+        @JavascriptInterface
+        public void setBar(String color) {
+            runOnUiThread(() -> { try { getWindow().setStatusBarColor(Color.parseColor(color)); } catch (Exception ignored) { } });
+        }
+
         /** The report from the last crash, once (then it's cleared). */
         @JavascriptInterface
         public String lastCrash() {
