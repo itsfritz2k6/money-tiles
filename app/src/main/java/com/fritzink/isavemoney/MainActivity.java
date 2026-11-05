@@ -36,6 +36,11 @@ import java.nio.charset.StandardCharsets;
 
 /** The whole app is the offline page in assets/index.html; this activity hosts it and gives it file saving and self-updates. */
 public class MainActivity extends Activity {
+    static final java.util.Set<String> STORE_HOSTS = new java.util.HashSet<>(java.util.Arrays.asList(
+        "www.walmart.com", "www.target.com", "www.amazon.com", "www.costco.com", "www.samsclub.com", "www.kroger.com",
+        "www.frysfood.com", "www.safeway.com", "www.albertsons.com", "www.heb.com", "www.publix.com", "www.aldi.us",
+        "www.walgreens.com", "www.cvs.com", "www.instacart.com", "www.homedepot.com", "www.lowes.com", "www.bestbuy.com",
+        "www.google.com"));
     private static MainActivity live;   // the visible page, for update results that arrive in the background
     private static final int REQ_FILE = 7;
     private static final String ACTION_INSTALLED = "com.fritzink.isavemoney.UPDATE_RESULT";
@@ -330,6 +335,15 @@ public class MainActivity extends Activity {
         @JavascriptInterface
         public String lastInstall() {
             return getSharedPreferences("updates", MODE_PRIVATE).getString("fail", "");
+        }
+
+        /** Shopping list: search a store for an item. Opens the store's app if installed, else the browser.
+         *  Only these hosts (the STORES list in index.html), so the page can't open anything else. */
+        @JavascriptInterface
+        public void openStore(String url) {
+            Uri u = Uri.parse(url);
+            if (!"https".equals(u.getScheme()) || !STORE_HOSTS.contains(u.getHost())) return;
+            runOnUiThread(() -> { try { startActivity(new Intent(Intent.ACTION_VIEW, u)); } catch (Exception e) { toast("No browser found"); } });
         }
 
         /** Fallback: let the browser download the new version and Android's own installer handle it. */
