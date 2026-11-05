@@ -22,7 +22,7 @@ svg{display:block}
 
 /* splash */
 #splash{position:fixed;inset:0;background:var(--bg);z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .35s}
-#splash .logo{width:112px;height:112px;border-radius:34px;background:#FBE3DF;display:flex;align-items:center;justify-content:center;box-shadow:0 10px 30px rgba(183,110,121,.25)}
+#splash .logo{width:112px;height:112px;border-radius:34px;background:var(--rg3);display:flex;align-items:center;justify-content:center;box-shadow:0 10px 30px rgba(183,110,121,.25)}
 #splash .name{position:absolute;bottom:46px;font-size:22px;font-weight:800;color:var(--rg)}
 
 /* header */
@@ -48,9 +48,9 @@ svg{display:block}
 
 /* tiles */
 .tiles{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:16px 12px 40px}
-.tile{position:relative;background:linear-gradient(165deg,#FFFFFF 0%,#FCEDEA 100%);border:1px solid var(--line);border-radius:24px;padding:14px;min-height:168px;text-align:left;display:flex;flex-direction:column;box-shadow:0 6px 16px rgba(183,110,121,.10);transition:transform .12s}
+.tile{position:relative;background:linear-gradient(165deg,#FFFFFF 0%,var(--blush) 100%);border:1px solid var(--line);border-radius:24px;padding:14px;min-height:168px;text-align:left;display:flex;flex-direction:column;box-shadow:0 6px 16px rgba(183,110,121,.10);transition:transform .12s}
 .tile:active{transform:scale(.97)}
-.tile .ti{width:60px;height:60px;border-radius:19px;background:#FBE3DF;display:flex;align-items:center;justify-content:center}
+.tile .ti{width:60px;height:60px;border-radius:19px;background:var(--rg3);display:flex;align-items:center;justify-content:center}
 .tile .tn{font-weight:800;font-size:16px;margin-top:10px}
 .tile .tt{font-weight:800;font-size:21px;margin-top:auto;padding-top:6px}
 .tile .ts{font-size:12.5px;color:var(--mut);font-weight:600}
@@ -99,7 +99,7 @@ svg{display:block}
 .seg button .ic{width:19px;height:19px}
 .seg button.on{background:#fff;color:var(--rg);box-shadow:0 2px 6px rgba(183,110,121,.15)}
 .list{margin:12px 12px 0;background:#fff;border-radius:20px;border:1px solid var(--line);overflow:hidden}
-.dsep{padding:9px 16px 5px;font-size:12.5px;font-weight:800;color:var(--mut);background:#FFFBFA;border-top:1px solid var(--line)}
+.dsep{padding:9px 16px 5px;font-size:12.5px;font-weight:800;color:var(--mut);background:var(--bg);border-top:1px solid var(--line)}
 .dsep:first-child{border-top:0}
 .row{display:flex;align-items:center;gap:12px;padding:12px 14px;border-top:1px solid var(--line);min-height:62px;transition:background .15s}
 .dsep + .row,.list > .row:first-child{border-top:0}
@@ -205,7 +205,7 @@ details.more summary{color:var(--rg);font-weight:800;padding:6px 0;cursor:pointe
 .pday small{font-size:10.5px;font-weight:800;color:var(--mut)}
 .pday .dn2{font-size:12px;font-weight:700;color:var(--mut)}
 .pday b{font-size:16px;font-weight:800;color:var(--ink)}
-.pday.wkd{background:#FCE4E1}
+.pday.wkd{background:var(--rg3)}
 .pday.past{background:#F1ECEB}
 .pday.past b{color:#7d6a6e}
 .pday.today{border-color:var(--rg);background:#fff}
@@ -225,7 +225,7 @@ details.more summary{color:var(--rg);font-weight:800;padding:6px 0;cursor:pointe
 .stepper.sm input{width:56px;font-size:18px;padding:4px 0}
 .force{position:fixed;inset:0;z-index:90;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:24px}
 .force .fc{max-width:380px;width:100%;text-align:center}
-.force .flogo{width:104px;height:104px;margin:0 auto 14px;border-radius:30px;background:#FBE3DF;display:flex;align-items:center;justify-content:center;box-shadow:0 10px 30px rgba(183,110,121,.25)}
+.force .flogo{width:104px;height:104px;margin:0 auto 14px;border-radius:30px;background:var(--rg3);display:flex;align-items:center;justify-content:center;box-shadow:0 10px 30px rgba(183,110,121,.25)}
 .force h2{margin:0 0 8px;font-size:24px;font-weight:800;color:var(--rg)}
 .force p{color:#6d555a;line-height:1.5;margin:0 0 10px}
 .force ul{text-align:left;color:#6d555a;margin:0 0 6px;padding-left:22px;line-height:1.5;font-size:14.5px}
@@ -238,7 +238,7 @@ details.more summary{color:var(--rg);font-weight:800;padding:6px 0;cursor:pointe
 .mgrid{display:grid;grid-template-columns:repeat(7,1fr) 44px;gap:3px}
 .mdw{text-align:center;font-size:11px;font-weight:800;color:var(--mut);padding-bottom:2px}
 .mc{position:relative;border-radius:10px;padding:4px 0 5px;display:flex;flex-direction:column;align-items:center;min-height:46px;border:2px solid transparent}
-.mc.p0{background:#FBEDEA} .mc.p1{background:#F6E1DC}
+.mc.p0{background:var(--blush)} .mc.p1{background:var(--rg3)}
 .mc .mn{font-size:10.5px;font-weight:700;color:var(--mut)}
 .mc b{font-size:14.5px;font-weight:800;color:var(--ink)}
 .mc.out{opacity:.4}
@@ -258,6 +258,14 @@ details.more summary{color:var(--rg);font-weight:800;padding:6px 0;cursor:pointe
 .stepper.sm2 input{width:80px;font-size:26px}
 .stepper.sm2 button{width:44px;height:44px;font-size:24px}
 .mw.ot{border-color:#BFE3CC;background:#F1FAF4} .mw.ot small{color:var(--green)}
+.themes{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.themes button{border:2px solid var(--line);border-radius:16px;padding:10px 6px;background:#fff;font-weight:700;font-size:13px;display:flex;flex-direction:column;align-items:center;gap:6px}
+.themes button.on{border-color:var(--rg);background:var(--blush)}
+.themes i{width:44px;height:44px;border-radius:50%;display:block;box-shadow:inset 0 0 0 3px rgba(255,255,255,.6)}
+.tilerow{display:flex;align-items:center;gap:12px;padding:10px 14px;border-top:1px solid var(--line);font-weight:700}
+.tilerow:first-child{border-top:0}
+.tilerow .mini2{width:34px;height:34px;border-radius:10px;background:var(--rg3);display:flex;align-items:center;justify-content:center}
+.tilerow input{width:22px;height:22px;accent-color:var(--rg);margin-left:auto}
 .card2{background:#fff;border:1px solid var(--line);border-radius:18px;padding:14px;margin-top:18px}
 </style>
 </head>
@@ -539,7 +547,7 @@ function refresh() { syncPredictions(); renderHome(); for (const s of stack) if 
 function renderHome() {
   $('#mLbl').textContent = mLabel(curM);
   $('#totH').textContent = `${MON[+curM.slice(5) - 1]} totals`;
-  const tt = S.tiles.map(t => ({t, x: tileTotals(t, curM)}));
+  const tt = S.tiles.filter(t => !t.hidden).map(t => ({t, x: tileTotals(t, curM)}));
   $('#tgrid').innerHTML = tt.filter(({t}) => t.kind !== 'pay').map(({t, x}) => `<div class="tg"><small>${esc(t.name)}</small><b class="${totCls(t, x.total)}">${totTxt(t, x.total)}</b>${t.kind === 'check' ? `<i>${fmt(x.paid)} paid</i>` : `<i>${x.count} ${x.count === 1 ? 'entry' : 'entries'}</i>`}</div>`).join('');
   $('#tiles').innerHTML = tt.map(({t, x}) => t.kind === 'pay' ? payTileHTML(t) : `<button class="tile" data-t="${t.id}"><div class="ti">${cute(t.icon, 46)}</div><div class="tn">${esc(t.name)}</div>
       <div class="tt ${totCls(t, x.total)}">${totTxt(t, x.total)}</div>
@@ -762,12 +770,13 @@ function itemForm(it0, occDate) {
 
 /* ---------- TILE FORM (add / edit tiles) ---------- */
 const KINDS = [
+  {k: 'check', t: 'Budget', d: 'A checklist of bills. Tick each one off when it\'s paid.', sw: '\u2713', c: 'var(--rg3)', fc: 'var(--rg)', main: true},
+  {k: 'pay', t: 'Paycheck', d: 'Plan your hours on a calendar and see each check, overtime and deductions included.', sw: '$', c: '#FFF1D2', fc: '#B7862F', main: true},
+  {k: 'both', t: 'Money in and out', d: 'Like savings: add what goes in and what comes out.', sw: '\u00b1', c: '#EEF3FB', fc: '#5C6BC0'},
   {k: 'in', t: 'Money coming in', d: 'Like Earnings. Shows in green with a +.', sw: '+', c: '#E3F4E9', fc: 'var(--green)'},
-  {k: 'out', t: 'Money going out', d: 'Like Transactions. Shows in red with a −.', sw: MINUS, c: '#FBE3E5', fc: 'var(--red)'},
-  {k: 'check', t: 'Checklist to pay', d: 'Like Budget. Tick things off as you pay them.', sw: '✓', c: '#FBE3DF', fc: 'var(--rg)'},
-  {k: 'both', t: 'Money in and out', d: 'Like savings: add what goes in and what comes out. Shows the difference.', sw: '\u00b1', c: '#EEF3FB', fc: '#5C6BC0'},
-  {k: 'pay', t: 'Pay calculator', d: 'Work out a paycheck from hours, overtime and deductions.', sw: '$', c: '#FFF1D2', fc: '#B7862F'}
+  {k: 'out', t: 'Money going out', d: 'Like Transactions. Shows in red with a \u2212.', sw: MINUS, c: '#FBE3E5', fc: 'var(--red)'}
 ];
+const KIND_ICON = {check: 'clip', pay: 'calc', both: 'star', in: 'piggy', out: 'bag'};
 // Turning a one-way tile into in-and-out keeps every old entry going the way it did.
 function toBoth(t) {
   const was = t.kind === 'in' || t.kind === 'out' ? t.kind : 'out';
@@ -777,12 +786,13 @@ function toBoth(t) {
 }
 function tileForm(t) {
   const isNew = !t;
-  let kind = t ? t.kind : 'out', icon = t ? t.icon : 'heart';
+  let kind = t ? t.kind : 'check', icon = t ? t.icon : 'clip', iconPicked = !!t;
   const idx = t ? S.tiles.indexOf(t) : -1;
   const n = t ? S.items.filter(i => i.tile === t.id).length : 0;
   return sheet(isNew ? 'New tile' : 'Edit tile', `<div class="form">
     <div class="fld"><label>Tile name</label><input id="tName" value="${esc(t ? t.name : '')}" placeholder="e.g. Savings, Kids, Pets"></div>
-    <div class="fld"><label>What kind of tile?</label><div class="kinds" id="tKind">${KINDS.map(o => `<button data-k="${o.k}"><span class="sw" style="background:${o.c};color:${o.fc}">${o.sw}</span><span><b>${o.t}</b>${o.d}</span></button>`).join('')}</div></div>
+    <div class="fld"><label>What kind of tile?</label><div class="kinds" id="tKind">${(() => { const b = o => `<button data-k="${o.k}"><span class="sw" style="background:${o.c};color:${o.fc}">${o.sw}</span><span><b>${o.t}</b>${o.d}</span></button>`;
+      return KINDS.filter(o => o.main).map(b).join('') + `<details class="more" ${t && !['check', 'pay'].includes(t.kind) ? 'open' : ''}><summary>More kinds (money in / out)</summary><div class="kinds" style="margin-top:8px">${KINDS.filter(o => !o.main).map(b).join('')}</div></details>`; })()}</div></div>
     <div class="fld"><label>Pick an icon</label><div class="icons" id="tIcons">${Object.keys(CUTE).map(k => `<button data-i="${k}">${cute(k)}</button>`).join('')}</div></div>
     <button class="btn" id="tSave">${ic('check')}${isNew ? 'Add tile' : 'Save'}</button>
     ${!isNew ? `<div style="display:flex;gap:8px"><button class="btn soft" id="tUp" ${idx === 0 ? 'disabled style="opacity:.4"' : ''}>${ic('left')}Move earlier</button><button class="btn soft" id="tDown" ${idx === S.tiles.length - 1 ? 'disabled style="opacity:.4"' : ''}>Move later${ic('right')}</button></div>
@@ -793,8 +803,8 @@ function tileForm(t) {
       q('#tKind').querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.k === kind));
       q('#tIcons').querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.i === icon));
     };
-    q('#tKind').onclick = e => { const b = e.target.closest('button'); if (b) { kind = b.dataset.k; sync(); } };
-    q('#tIcons').onclick = e => { const b = e.target.closest('button'); if (b) { icon = b.dataset.i; sync(); } };
+    q('#tKind').onclick = e => { const b = e.target.closest('button[data-k]'); if (b) { kind = b.dataset.k; if (!iconPicked) icon = KIND_ICON[kind] || icon; if (isNew && !q('#tName').value.trim() && (kind === 'check' || kind === 'pay')) q('#tName').placeholder = kind === 'pay' ? 'e.g. Second job' : 'e.g. Fritz\'s bills'; sync(); } };
+    q('#tIcons').onclick = e => { const b = e.target.closest('button'); if (b) { icon = b.dataset.i; iconPicked = true; sync(); } };
     sync();
     q('#tSave').onclick = () => {
       const name = q('#tName').value.trim(); if (!name) { toast('Give the tile a name'); q('#tName').focus(); return; }
@@ -929,7 +939,7 @@ function openPay(id) {
       }
       const ot = Math.max(0, wk - cap);
       // worked hours only count toward overtime; PTO is listed under them
-      rows += cells + `<div class="mw ${ot ? 'ot' : ''}"><b>${r2(wk)}</b>${ot ? `<small>+${r2(ot)} OT</small>` : wk ? `<small>${r2(cap - wk)} to OT</small>` : '<small>hrs</small>'}${wkPto ? `<small class="ptos">+${r2(wkPto)} PTO</small>` : ''}</div>`;
+      rows += cells + `<div class="mw ${ot ? 'ot' : ''}"><b>${r2(wk)}</b>${ot ? `<small>+${r2(ot)} OT</small>` : wk >= cap ? `<small>at ${cap}</small>` : wk ? `<small>${r2(cap - wk)} to OT</small>` : '<small>hrs</small>'}${wkPto ? `<small class="ptos">+${r2(wkPto)} PTO</small>` : ''}</div>`;
     }
     const monthPays = paydaysIn(p, calM);
     el.querySelector('.sb').innerHTML = `
@@ -1398,6 +1408,10 @@ function restore() {
 function openSettings() {
   const cur = ['$', '€', '£', '¥', '₹', '₱', '₦', 'R', 'R$', 'C$', 'A$'];
   return sheet('Settings', `<div class="form">
+    <div class="fld"><label>Theme colors</label><div class="themes" id="sTheme">${Object.entries(THEMES).map(([k, t]) => `<button data-th="${k}" class="${(S.theme || 'rose') === k ? 'on' : ''}"><i style="background:linear-gradient(135deg,${t.g[0]},${t.g[3]})"></i>${t.name}</button>`).join('')}</div></div>
+    <div class="fld"><label>Tiles on the home screen</label><div class="list" style="margin:0" id="sTiles">${S.tiles.map(t => `<label class="tilerow"><span class="mini2">${cute(t.icon, 24)}</span>${esc(t.name)}<input type="checkbox" data-tile="${t.id}" ${t.hidden ? '' : 'checked'}></label>`).join('')}</div>
+      <div style="display:flex;gap:8px"><button class="btn soft" id="sBP" style="margin-top:8px">Just Budget and Paycheck</button><button class="btn soft" id="sAll" style="margin-top:8px">Show all</button></div>
+      <div class="hint">Hidden tiles keep everything in them; tick them to bring them back. Add new tiles with "Add a tile" on the home screen.</div></div>
     <div class="fld"><label>Currency</label><div class="chips" id="sCur">${cur.map(c => `<button data-c="${esc(c)}" class="${S.currency === c ? 'on' : ''}">${esc(c)}</button>`).join('')}</div></div>
     <div class="list" style="margin:18px 0 0">
       <button class="setrow" id="sCsv">${ic('dl')}<span>Export this year to a spreadsheet (CSV)</span></button>
@@ -1412,12 +1426,36 @@ function openSettings() {
   </div>`, {icon: 'diamond', mount: el => {
     const q = s => el.querySelector(s);
     q('#sCur').onclick = e => { const b = e.target.closest('button'); if (!b) return; S.currency = b.dataset.c; save(); q('#sCur').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); refresh(); };
+    q('#sTheme').onclick = e => { const b = e.target.closest('button'); if (!b) return; S.theme = b.dataset.th; save(); applyTheme(S.theme); q('#sTheme').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); };
+    const tilesSync = () => q('#sTiles').querySelectorAll('[data-tile]').forEach(c => { c.checked = !tileOf(c.dataset.tile).hidden; });
+    q('#sTiles').onchange = e => { const c = e.target.closest('[data-tile]'); if (!c) return; tileOf(c.dataset.tile).hidden = !c.checked; save(); refresh(); };
+    q('#sBP').onclick = () => { for (const t of S.tiles) t.hidden = !(t.kind === 'check' || t.kind === 'pay'); save(); tilesSync(); refresh(); toast('Showing just Budget and Paycheck'); };
+    q('#sAll').onclick = () => { for (const t of S.tiles) t.hidden = false; save(); tilesSync(); refresh(); toast('Showing every tile'); };
     q('#sCsv').onclick = exportCSV;
     q('#sBak').onclick = () => saveFile(`money-tiles-backup-${stamp()}.json`, JSON.stringify(S), 'application/json');
     q('#sRes').onclick = restore;
     q('#sUpd').onclick = () => checkUpdate(true);
     q('#sWipe').onclick = async () => { if (!await ask('Erase everything?', 'All tiles and entries will be deleted from this phone. This cannot be undone.', 'Erase', true)) return; S = fresh(); save(); closeAll(); refresh(); toast('Erased'); };
   }});
+}
+
+/* ---------- THEMES ---------- */
+const THEMES = {
+  rose: {name: 'Rose gold', rg: '#B76E79', rg2: '#D9A59A', rg3: '#F3D9D2', blush: '#FBEDEA', bg: '#FFF8F6', line: '#F1DEDA', mut: '#9B7F84', ink: '#4A3036', g: ['#EDC2B4', '#DDA69A', '#C08085', '#B76E79'], bar: '#C98A88'},
+  berry: {name: 'Berry pink', rg: '#B23A6B', rg2: '#E199B6', rg3: '#F6D5E2', blush: '#FCEEF3', bg: '#FFF8FB', line: '#F3DCE6', mut: '#9A7584', ink: '#4A2A38', g: ['#F2B5CC', '#E18BAE', '#C9578A', '#B23A6B'], bar: '#C24F7F'},
+  lavender: {name: 'Lavender', rg: '#8466B0', rg2: '#B9A3D6', rg3: '#E6DCF3', blush: '#F4EEFA', bg: '#FBF8FE', line: '#E8DFF3', mut: '#8C7F99', ink: '#3D3150', g: ['#D3C3EC', '#B9A1DE', '#9A7DC6', '#8466B0'], bar: '#9378BC'},
+  ocean: {name: 'Ocean blue', rg: '#3F78B4', rg2: '#9BBFE3', rg3: '#D8E7F6', blush: '#EDF4FB', bg: '#F7FAFD', line: '#DCE7F2', mut: '#74879A', ink: '#26384A', g: ['#B3D1EE', '#86B2DE', '#5C93CA', '#3F78B4'], bar: '#5088C2'},
+  mint: {name: 'Mint', rg: '#3A9580', rg2: '#8FCDBE', rg3: '#D4EEE7', blush: '#EAF7F3', bg: '#F6FCFA', line: '#D8EEE8', mut: '#6F8C85', ink: '#24403A', g: ['#B2E1D5', '#84CDBA', '#58B29C', '#3A9580'], bar: '#48A58F'},
+  peach: {name: 'Peach', rg: '#D06A45', rg2: '#F0B49A', rg3: '#FADDD0', blush: '#FDF0EA', bg: '#FFF9F6', line: '#F5DED3', mut: '#A0857A', ink: '#4A3027', g: ['#F8CDB6', '#F2A585', '#E0835E', '#D06A45'], bar: '#DB7A55'},
+  gold: {name: 'Champagne', rg: '#A57C3C', rg2: '#D7BE8E', rg3: '#F1E6CF', blush: '#FAF5EA', bg: '#FFFCF6', line: '#EEE3CC', mut: '#968A73', ink: '#433826', g: ['#EEDDB8', '#DCC08A', '#C09A5A', '#A57C3C'], bar: '#B48C4E'},
+  slate: {name: 'Slate', rg: '#5A6676', rg2: '#A9B3BF', rg3: '#E1E5EA', blush: '#F2F4F6', bg: '#F9FAFB', line: '#E2E6EB', mut: '#7D8794', ink: '#2B323B', g: ['#C4CCD6', '#9CA7B4', '#76828F', '#5A6676'], bar: '#6A7685'},
+  coral: {name: 'Coral', rg: '#D9545E', rg2: '#F2A6A9', rg3: '#FBDADB', blush: '#FEEFEF', bg: '#FFF8F8', line: '#F7DFE0', mut: '#A07F82', ink: '#4A2A2D', g: ['#F9C1BE', '#F29590', '#E56B6E', '#D9545E'], bar: '#E0646C'}
+};
+function applyTheme(key) {
+  const th = THEMES[key] || THEMES.rose, r = document.documentElement.style;
+  for (const k of ['rg', 'rg2', 'rg3', 'blush', 'bg', 'line', 'mut', 'ink']) r.setProperty('--' + k, th[k]);
+  r.setProperty('--grad', `linear-gradient(135deg,${th.g[0]} 0%,${th.g[1]} 45%,${th.g[2]} 80%,${th.g[3]} 100%)`);
+  if (window.Native && Native.setBar) Native.setBar(th.bar);
 }
 
 /* ---------- boot ---------- */
@@ -1430,7 +1468,7 @@ function boot() {
   $('#mPrev').onclick = () => { curM = mShift(curM, -1); refresh(); };
   $('#mNext').onclick = () => { curM = mShift(curM, 1); refresh(); };
   $('#mLbl').onclick = () => { curM = today().slice(0, 7); refresh(); };
-  load(); syncPredictions(); renderHome();
+  load(); applyTheme(S.theme); syncPredictions(); renderHome();
   setTimeout(() => checkUpdate(false), 1500);
   // The phone app keeps a report if it ever crashed; show it once so she can send it to Fritz.
   const crash = window.Native && Native.lastCrash ? Native.lastCrash() : '';
