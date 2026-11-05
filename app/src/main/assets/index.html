@@ -217,6 +217,17 @@ details.more summary{color:var(--rg);font-weight:800;padding:6px 0;cursor:pointe
 .quick{padding:12px 16px}
 .quick > div:first-child{display:flex;justify-content:space-between;font-size:15.5px}
 .quick > div:first-child span{font-weight:800;color:var(--rg)}
+.qadd{display:flex;gap:8px;margin:14px 12px 0}
+.qadd input{flex:1;min-width:0;border:1.5px solid var(--line);background:#fff;padding:13px 16px;font-size:16px;outline:none;border-radius:18px;font-weight:600}
+.qadd input:focus{border-color:var(--rg2)}
+.qadd button{width:50px;flex:none;border-radius:18px;background:var(--grad);color:#fff;display:flex;align-items:center;justify-content:center}
+.qadd button .ic{width:26px;height:26px}
+.again{margin:12px 12px 0}
+.again .chips button{display:flex;align-items:center;gap:3px;padding:7px 12px 7px 9px;font-size:13.5px}
+.again .chips .ic{width:17px;height:17px}
+.fld .amtbox input:not([type=checkbox]){border:0;padding:0;border-radius:0;background:transparent;font-size:38px;font-weight:800;max-width:230px}
+.shopb{display:flex;gap:8px;margin:0 12px}
+.shopb .btn{margin-top:12px;font-size:15px;padding:13px 8px}
 .stepper{display:flex;align-items:center;justify-content:center;gap:12px}
 .stepper button{width:52px;height:52px;border-radius:50%;background:var(--blush);color:var(--rg);font-size:28px;font-weight:800}
 .stepper input{width:110px;text-align:center;font-size:36px;font-weight:800;border:0;border-bottom:2px solid var(--line);outline:none;background:transparent}
@@ -304,6 +315,7 @@ const P = {
   restore:'M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.954 8.954 0 0 0 13 21a9 9 0 0 0 0-18zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z',
   del:'M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z',
   edit:'M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a.996.996 0 0 0 0-1.41l-2.34-2.34a.996.996 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z',
+  share:'M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11A2.99 2.99 0 0 0 21 5a3 3 0 0 0-6 0c0 .24.04.47.09.7L8.04 9.81A2.99 2.99 0 0 0 3 12a2.99 2.99 0 0 0 5.04 2.19l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z',
   sparkle:'M12 2l2.2 6.3L20.5 10l-6.3 2.2L12 18.5l-2.2-6.3L3.5 10l6.3-1.7zM19 15l1 2.8 2.8 1-2.8 1L19 22.6l-1-2.8-2.8-1 2.8-1z'
 };
 const ic = (n, cls) => `<svg class="ic ${cls || ''}" viewBox="0 0 24 24"><path d="${P[n]}"/></svg>`;
@@ -386,9 +398,10 @@ function fresh() {
       {id: 'earn', name: 'Earnings', kind: 'in', icon: 'piggy'},
       {id: 'tx', name: 'Transactions', kind: 'out', icon: 'bag'},
       {id: 'budget', name: 'Budget', kind: 'check', icon: 'clip'},
-      {id: 'pay', name: 'Paycheck', kind: 'pay', icon: 'calc', pay: defPay()}
+      {id: 'pay', name: 'Paycheck', kind: 'pay', icon: 'calc', pay: defPay()},
+      shopTile()
     ],
-    items: [], payAdded: true, autoUpd: true
+    items: [], payAdded: true, shopAdded: true, autoUpd: true
   };
 }
 // A private build carries window.SEED (her organised statements + pay setup). Merge it once; never overwrite her own entries.
@@ -420,6 +433,8 @@ function load() {
   // 2.2 added the Paycheck calculator tile: give it to existing installs once (she can delete it).
   if (!S.payAdded) { if (!S.tiles.some(t => t.kind === 'pay')) S.tiles.push({id: 'pay', name: 'Paycheck', kind: 'pay', icon: 'calc', pay: defPay()}); S.payAdded = true; save(); }
   if (S.autoUpd == null) S.autoUpd = true;
+  // 2.10 added the Shopping list: give it to existing installs once (it can be hidden or deleted).
+  if (!S.shopAdded) { if (!S.tiles.some(t => t.kind === 'shop')) S.tiles.push(shopTile()); S.shopAdded = true; save(); }
   for (const t of S.tiles) if (t.kind === 'pay' && t.pay && t.pay.v === 2 && !t.pay.fix3) {
     for (const d of [...(t.pay.pre || []), ...(t.pay.post || [])]) if (d.no3 == null && /medical|dental|vision|insur|illness|life/i.test(d.name || '')) d.no3 = true;
     if (t.pay.start === '2026-09-20' && num(t.pay.lag) === 5) t.pay.lag = 6;   // check date is the Friday (Fritz, 10-18)
@@ -549,8 +564,8 @@ function renderHome() {
   $('#mLbl').textContent = mLabel(curM);
   $('#totH').textContent = `${MON[+curM.slice(5) - 1]} totals`;
   const tt = S.tiles.filter(t => !t.hidden).map(t => ({t, x: tileTotals(t, curM)}));
-  $('#tgrid').innerHTML = tt.filter(({t}) => t.kind !== 'pay').map(({t, x}) => `<div class="tg"><small>${esc(t.name)}</small><b class="${totCls(t, x.total)}">${totTxt(t, x.total)}</b>${t.kind === 'check' ? `<i>${fmt(x.paid)} paid</i>` : `<i>${x.count} ${x.count === 1 ? 'entry' : 'entries'}</i>`}</div>`).join('');
-  $('#tiles').innerHTML = tt.map(({t, x}) => t.kind === 'pay' ? payTileHTML(t) : `<button class="tile" data-t="${t.id}"><div class="ti">${cute(t.icon, 46)}</div><div class="tn">${esc(t.name)}</div>
+  $('#tgrid').innerHTML = tt.filter(({t}) => t.kind !== 'pay' && t.kind !== 'shop').map(({t, x}) => `<div class="tg"><small>${esc(t.name)}</small><b class="${totCls(t, x.total)}">${totTxt(t, x.total)}</b>${t.kind === 'check' ? `<i>${fmt(x.paid)} paid</i>` : `<i>${x.count} ${x.count === 1 ? 'entry' : 'entries'}</i>`}</div>`).join('');
+  $('#tiles').innerHTML = tt.map(({t, x}) => t.kind === 'pay' ? payTileHTML(t) : t.kind === 'shop' ? shopTileHTML(t) : `<button class="tile" data-t="${t.id}"><div class="ti">${cute(t.icon, 46)}</div><div class="tn">${esc(t.name)}</div>
       <div class="tt ${totCls(t, x.total)}">${totTxt(t, x.total)}</div>
       ${t.kind === 'check' ? `<div class="ts">${x.doneCount} of ${x.count} paid${(() => { const n = overdueBefore(t, curM).length + x.list.filter(e => !e.done && e.d < today()).length; return n ? ` · <span class="red">${n} overdue</span>` : ''; })()}</div><div class="pb"><i style="width:${x.total > 0 ? x.paid / x.total * 100 : 0}%"></i></div>` : t.kind === 'both' || (x.inSum && x.outSum) ? `<div class="ts"><span class="green">+${fmt(x.inSum)}</span> · <span class="red">${MINUS}${fmt(x.outSum)}</span></div>` : `<div class="ts">${x.count} ${x.count === 1 ? 'entry' : 'entries'} this month</div>`}
     </button>`).join('') + `<button class="tile add" id="addTile"><span class="plus">${ic('add')}</span>Add a tile</button>`;
@@ -561,6 +576,7 @@ function renderHome() {
 /* ---------- TILE PAGE ---------- */
 function openTile(id) {
   if ((tileOf(id) || {}).kind === 'pay') return openPay(id);
+  if ((tileOf(id) || {}).kind === 'shop') return openShop(id);
   let mode = 'list', selDay = null;
   const t = tileOf(id);
   const el = sheet(t.name, '', {icon: t.icon, head: `<button class="ib" data-more aria-label="Edit tile">${ic('more')}</button>`, fab: () => itemForm({tile: id, date: selDay || defDate()})});
@@ -653,6 +669,153 @@ function calendar(T, list, selDay) {
   return `<div class="cal"><div class="wk">${DOW.map(d => `<span>${d[0]}</span>`).join('')}</div><div class="gr">${g}</div></div>`;
 }
 function compact(v) { return v >= 10000 ? Math.round(v / 1000) + 'k' : v >= 1000 ? (v / 1000).toFixed(1).replace(/\.0$/, '') + 'k' : Math.round(v); }
+
+/* ---------- SHOPPING LIST ---------- */
+// A shop tile keeps its own list (t.list) instead of dated entries: things to buy, crossed off in the store.
+// Prices are optional. "Done shopping" can log what was spent as one entry in a money-out tile.
+function shopTile() { return {id: 'shop', name: 'Shopping list', kind: 'shop', icon: 'cart', list: [], recent: []}; }
+const shopLine = x => r2(num(x.price) * (num(x.qty) || 1));
+function shopSums(t) {
+  const L = t.list || [], need = L.filter(x => !x.got), got = L.filter(x => x.got);
+  return {need, got, needSum: r2(sum(need, shopLine)), gotSum: r2(sum(got, shopLine)), unpriced: L.filter(x => !num(x.price)).length};
+}
+function shopTileHTML(t) {
+  const x = shopSums(t), all = x.needSum + x.gotSum;
+  return `<button class="tile" data-t="${t.id}"><div class="ti">${cute(t.icon, 46)}</div><div class="tn">${esc(t.name)}</div>
+    <div class="tt rg">${x.need.length ? `${x.need.length} to get` : x.got.length ? 'All got!' : 'Empty'}</div>
+    <div class="ts">${x.got.length ? `${x.got.length} in the cart` : x.need.length ? x.need.slice(0, 2).map(i => esc(i.name)).join(', ') + (x.need.length > 2 ? '…' : '') : 'Tap to add things'}${all ? ` · about ${fmt(all)}` : ''}</div></button>`;
+}
+// "2 milk", "2x eggs" or "eggs x2" -> {name, qty}
+function parseShop(txt) {
+  let name = txt.trim().replace(/\s+/g, ' '), qty = 1, m;
+  if ((m = name.match(/^(\d{1,3})\s*x?\s+(.+)$/i))) { qty = +m[1]; name = m[2]; }
+  else if ((m = name.match(/^(.+?)\s+x\s*(\d{1,3})$/i))) { name = m[1]; qty = +m[2]; }
+  return {name: name.charAt(0).toUpperCase() + name.slice(1), qty: Math.max(1, qty)};
+}
+function shopAdd(t, txt) {
+  const {name, qty} = parseShop(txt); if (!name) return null;
+  const cur = t.list.find(x => x.name.toLowerCase() === name.toLowerCase());
+  if (cur) { if (cur.got) { cur.got = false; cur.qty = qty; } else cur.qty = num(cur.qty) + qty; return cur; }
+  const old = (t.recent || []).find(r => r.name.toLowerCase() === name.toLowerCase());   // remembers the last price
+  const it = {id: uid(), name, qty, price: old ? old.price || 0 : 0, got: false};
+  t.list.push(it); return it;
+}
+function shopRemember(t, items) {
+  t.recent = t.recent || [];
+  for (const it of items) { t.recent = t.recent.filter(r => r.name.toLowerCase() !== it.name.toLowerCase()); t.recent.unshift({name: it.name, price: num(it.price)}); }
+  t.recent = t.recent.slice(0, 40);
+}
+function shopRow(it) {
+  const line = shopLine(it);
+  return `<div class="row ${it.got ? 'done' : ''}" data-si="${it.id}"><button class="ck ${it.got ? 'on' : ''}" data-sg="${it.id}" aria-label="Got it">${ic('check')}</button><div class="mid"><div class="nm">${esc(it.name)}</div><div class="sub">${num(it.qty) > 1 ? `<span class="tag">× ${num(it.qty)}</span>` : ''}${num(it.price) && num(it.qty) > 1 ? `<span>${fmt(it.price)} each</span>` : ''}${it.note ? `<span>${esc(it.note)}</span>` : ''}</div></div>${line ? `<div class="amt rg">${fmt(line)}</div>` : ''}<span class="pen">${ic('edit')}</span></div>`;
+}
+function shareShop(t) {
+  const x = shopSums(t);
+  if (!x.need.length) { toast('Nothing left to get'); return; }
+  const txt = `${t.name}:\n` + x.need.map(i => `• ${i.name}${num(i.qty) > 1 ? ' × ' + num(i.qty) : ''}${i.note ? ' (' + i.note + ')' : ''}`).join('\n');
+  try { Native.share(t.name, txt); } catch (e) { try { navigator.clipboard.writeText(txt); toast('List copied'); } catch (e2) { toast('Sharing isn\'t available here'); } }
+}
+function openShop(id) {
+  let keep = '';   // what's half-typed in the add box survives a redraw
+  const t0 = tileOf(id);
+  const el = sheet(t0.name, '', {icon: t0.icon, head: `<button class="ib" data-share aria-label="Share list">${ic('share')}</button><button class="ib" data-more aria-label="Edit tile">${ic('more')}</button>`});
+  el.querySelector('[data-more]').onclick = () => tileForm(tileOf(id));
+  el.querySelector('[data-share]').onclick = () => shareShop(tileOf(id));
+  const draw = focus => {
+    const T = tileOf(id); if (!T) return;
+    T.list = T.list || [];
+    el.querySelector('h2').innerHTML = `<span class="mini">${cute(T.icon, 26)}</span><span>${esc(T.name)}</span>`;
+    const x = shopSums(T), all = r2(x.needSum + x.gotSum);
+    const onList = new Set(T.list.map(i => i.name.toLowerCase()));
+    const again = (T.recent || []).filter(r => !onList.has(r.name.toLowerCase())).slice(0, 14);
+    let h = `<div class="qadd"><input id="shIn" placeholder="Add something… e.g. 2 milk" autocomplete="off" enterkeyhint="done" value="${esc(keep)}"><button id="shAdd" aria-label="Add">${ic('add')}</button></div>`;
+    if (T.list.length) h += `<div class="big"><small>${x.need.length} to get · ${x.got.length} in the cart</small><b class="rg">${all ? fmt(all) : `${T.list.length} thing${T.list.length === 1 ? '' : 's'}`}</b>
+      ${all ? `<div class="pb"><i style="width:${x.gotSum / all * 100}%"></i></div><div class="split"><span><em class="green">${fmt(x.gotSum)}</em>In the cart</span><span><em class="rg">${fmt(x.needSum)}</em>Still to get</span></div>` : ''}
+      ${x.unpriced && T.list.length > x.unpriced ? `<small>${x.unpriced} without a price</small>` : !all ? `<small>Tap a thing to add a price, and see the total</small>` : ''}</div>`;
+    if (x.need.length) h += `<div class="list">${x.need.map(shopRow).join('')}</div>`;
+    if (x.got.length) h += `<div class="dayh"><span>In the cart</span><button data-clear>${ic('del')}Clear</button></div><div class="list">${x.got.map(shopRow).join('')}</div>`;
+    if (x.got.length) h += `<div class="shopb"><button class="btn" data-done>${ic('check')}Done shopping</button></div>`;
+    if (!T.list.length) h += `<div class="empty"><div class="ei">${cute(T.icon, 84)}</div>Your list is empty.<br>Type what you need above and tap <b>+</b>.<br>In the store, tap the circle to cross it off.</div>`;
+    if (again.length) h += `<div class="again"><div class="dayh" style="margin:6px 4px 8px"><span>Buy again</span></div><div class="chips">${again.map(r => `<button data-again="${esc(r.name)}">${ic('add')}${esc(r.name)}</button>`).join('')}</div></div>`;
+    h += `<div style="height:40px"></div>`;
+    el.querySelector('.sb').innerHTML = h;
+    const q = s => el.querySelector(s), inp = q('#shIn');
+    const add = () => {
+      const v = inp.value.trim(); if (!v) { inp.focus(); return; }
+      const parts = v.split(/\s*[,;]\s*/).filter(Boolean);   // "milk, eggs, bread" adds three
+      for (const p of parts) shopAdd(T, p);
+      keep = ''; save(); renderHome(); draw(true);
+    };
+    inp.oninput = () => { keep = inp.value; };
+    inp.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); add(); } };
+    q('#shAdd').onclick = add;
+    el.querySelectorAll('[data-again]').forEach(b => b.onclick = () => { shopAdd(T, b.dataset.again); save(); renderHome(); draw(); });
+    el.querySelectorAll('[data-sg]').forEach(b => b.onclick = ev => {
+      ev.stopPropagation();
+      const it = T.list.find(i => i.id === b.dataset.sg); if (!it) return;
+      it.got = !it.got; save(); renderHome(); draw();
+    });
+    el.querySelectorAll('[data-si]').forEach(r => r.onclick = () => { const it = T.list.find(i => i.id === r.dataset.si); if (it) shopItemForm(T, it); });
+    if (q('[data-clear]')) q('[data-clear]').onclick = () => {
+      shopRemember(T, x.got); T.list = T.list.filter(i => !i.got); save(); refresh(); toast('Cleared');
+    };
+    if (q('[data-done]')) q('[data-done]').onclick = () => doneShopping(T);
+    if (focus) setTimeout(() => inp.focus(), 50);
+  };
+  el._draw = () => draw(); draw();
+  return el;
+}
+const spendTile = () => S.tiles.find(x => x.id === 'tx' && isMoney(x)) || S.tiles.find(x => x.kind === 'out') || S.tiles.find(x => x.kind === 'both');
+function doneShopping(T) {
+  const x = shopSums(T), tx = spendTile();
+  const body = `<div class="form">
+    <div class="summary" style="margin-top:14px">${x.got.length} thing${x.got.length === 1 ? '' : 's'} in the cart${x.need.length ? `, ${x.need.length} still on the list (they stay on it)` : ''}.</div>
+    ${tx ? `<div class="fld"><label>What did you spend?</label><div class="amtbox" style="margin:0"><span class="sg red">${MINUS}${esc(S.currency)}</span><input id="dAmt" class="red" inputmode="decimal" placeholder="0.00" value="${x.gotSum ? x.gotSum.toFixed(2) : ''}" autocomplete="off"></div>
+      <div class="hint">${x.gotSum ? 'That\'s the total of the prices on your list. Change it to the receipt total if it\'s different.' : 'Type the receipt total.'}</div></div>
+    <div class="fld"><label>Call it</label><input id="dName" value="${esc(T.name === 'Shopping list' ? 'Groceries' : T.name)}"></div>
+    <button class="btn" id="dLog">${ic('check')}Add to ${esc(tx.name)} and clear the cart</button>` : ''}
+    <button class="btn soft" id="dClear">Just clear the cart</button>
+  </div>`;
+  sheet('Done shopping', body, {icon: T.icon, mount: el => {
+    const q = s => el.querySelector(s);
+    const finish = msg => { shopRemember(T, x.got); T.list = T.list.filter(i => !i.got); save(); closeTop(); refresh(); toast(msg); };
+    if (q('#dLog')) q('#dLog').onclick = () => {
+      const amt = money(q('#dAmt').value);
+      if (!(amt > 0)) { toast('Type what you spent'); q('#dAmt').focus(); return; }
+      const rec = {id: uid(), tile: tx.id, name: q('#dName').value.trim() || 'Groceries', amt, date: today(), rep: null, note: x.got.map(i => i.name).join(', ').slice(0, 120), done: {}, skip: {}};
+      if (tx.kind !== 'out') rec.dir = 'out';
+      S.items.push(rec);
+      if (curM !== today().slice(0, 7)) curM = today().slice(0, 7);
+      finish(`${fmt(amt)} added to ${tx.name}`);
+    };
+    q('#dClear').onclick = () => finish('Cart cleared');
+    if (q('#dAmt') && !x.gotSum) setTimeout(() => q('#dAmt').focus(), 300);
+  }});
+}
+function shopItemForm(T, it) {
+  const body = `<div class="form">
+    <div class="fld" style="margin-top:14px"><label>What is it?</label><input id="iName" value="${esc(it.name)}" autocomplete="off"></div>
+    <div class="fld"><label>How many?</label><div class="stepper sm2"><button data-q="-1">${MINUS}</button><input id="iQty" inputmode="numeric" value="${num(it.qty) || 1}"><button data-q="1">+</button></div></div>
+    <div class="fld"><label>Price each (optional)</label><div class="amtbox" style="margin:0"><span class="sg rg">${esc(S.currency)}</span><input id="iPrice" class="rg" inputmode="decimal" placeholder="0.00" value="${num(it.price) ? r2(it.price).toFixed(2) : ''}" autocomplete="off"></div><div class="hint" id="iLine"></div></div>
+    <div class="fld"><label>Note (optional)</label><input id="iNote" value="${esc(it.note || '')}" placeholder="e.g. the big one, any brand"></div>
+    <button class="btn" id="iSave">${ic('check')}Save</button>
+    <button class="btn ghost" id="iDel">${ic('del')}Take off the list</button>
+  </div>`;
+  sheet('Edit item', body, {icon: T.icon, mount: el => {
+    const q = s => el.querySelector(s);
+    const qty = () => Math.max(1, Math.min(999, parseInt(q('#iQty').value) || 1));
+    const line = () => { const p = money(q('#iPrice').value); q('#iLine').textContent = p > 0 && qty() > 1 ? `${qty()} × ${fmt(p)} = ${fmt(p * qty())}` : ''; };
+    el.querySelectorAll('[data-q]').forEach(b => b.onclick = () => { q('#iQty').value = Math.max(1, qty() + +b.dataset.q); line(); });
+    el.addEventListener('input', line); line();
+    q('#iSave').onclick = () => {
+      const name = q('#iName').value.trim(); if (!name) { toast('Give it a name'); return; }
+      const p = money(q('#iPrice').value);
+      Object.assign(it, {name, qty: qty(), price: p > 0 ? p : 0, note: q('#iNote').value.trim()});
+      save(); closeTop(); refresh(); toast('Saved');
+    };
+    q('#iDel').onclick = () => { shopRemember(T, [it]); T.list = T.list.filter(i => i.id !== it.id); save(); closeTop(); refresh(); toast('Taken off'); };
+  }});
+}
 
 /* ---------- ITEM FORM ---------- */
 function itemForm(it0, occDate) {
@@ -773,11 +936,12 @@ function itemForm(it0, occDate) {
 const KINDS = [
   {k: 'check', t: 'Budget', d: 'A checklist of bills. Tick each one off when it\'s paid.', sw: '\u2713', c: 'var(--rg3)', fc: 'var(--rg)', main: true},
   {k: 'pay', t: 'Paycheck', d: 'Plan your hours on a calendar and see each check, overtime and deductions included.', sw: '$', c: '#FFF1D2', fc: '#B7862F', main: true},
+  {k: 'shop', t: 'Shopping list', d: 'Things to buy. Cross them off in the store.', sw: cute('cart', 26), c: 'var(--rg3)', fc: 'var(--rg)', main: true},
   {k: 'both', t: 'Money in and out', d: 'Like savings: add what goes in and what comes out.', sw: '\u00b1', c: '#EEF3FB', fc: '#5C6BC0'},
   {k: 'in', t: 'Money coming in', d: 'Like Earnings. Shows in green with a +.', sw: '+', c: '#E3F4E9', fc: 'var(--green)'},
   {k: 'out', t: 'Money going out', d: 'Like Transactions. Shows in red with a \u2212.', sw: MINUS, c: '#FBE3E5', fc: 'var(--red)'}
 ];
-const KIND_ICON = {check: 'clip', pay: 'calc', both: 'star', in: 'piggy', out: 'bag'};
+const KIND_ICON = {check: 'clip', pay: 'calc', shop: 'cart', both: 'star', in: 'piggy', out: 'bag'};
 // Turning a one-way tile into in-and-out keeps every old entry going the way it did.
 function toBoth(t) {
   const was = t.kind === 'in' || t.kind === 'out' ? t.kind : 'out';
@@ -789,11 +953,11 @@ function tileForm(t) {
   const isNew = !t;
   let kind = t ? t.kind : 'check', icon = t ? t.icon : 'clip', iconPicked = !!t;
   const idx = t ? S.tiles.indexOf(t) : -1;
-  const n = t ? S.items.filter(i => i.tile === t.id).length : 0;
+  const n = t ? S.items.filter(i => i.tile === t.id).length + (t.list || []).length : 0;
   return sheet(isNew ? 'New tile' : 'Edit tile', `<div class="form">
     <div class="fld"><label>Tile name</label><input id="tName" value="${esc(t ? t.name : '')}" placeholder="e.g. Savings, Kids, Pets"></div>
     <div class="fld"><label>What kind of tile?</label><div class="kinds" id="tKind">${(() => { const b = o => `<button data-k="${o.k}"><span class="sw" style="background:${o.c};color:${o.fc}">${o.sw}</span><span><b>${o.t}</b>${o.d}</span></button>`;
-      return KINDS.filter(o => o.main).map(b).join('') + `<details class="more" ${t && !['check', 'pay'].includes(t.kind) ? 'open' : ''}><summary>More kinds (money in / out)</summary><div class="kinds" style="margin-top:8px">${KINDS.filter(o => !o.main).map(b).join('')}</div></details>`; })()}</div></div>
+      return KINDS.filter(o => o.main).map(b).join('') + `<details class="more" ${t && !['check', 'pay', 'shop'].includes(t.kind) ? 'open' : ''}><summary>More kinds (money in / out)</summary><div class="kinds" style="margin-top:8px">${KINDS.filter(o => !o.main).map(b).join('')}</div></details>`; })()}</div></div>
     <div class="fld"><label>Pick an icon</label><div class="icons" id="tIcons">${Object.keys(CUTE).map(k => `<button data-i="${k}">${cute(k)}</button>`).join('')}</div></div>
     <button class="btn" id="tSave">${ic('check')}${isNew ? 'Add tile' : 'Save'}</button>
     ${!isNew ? `<div style="display:flex;gap:8px"><button class="btn soft" id="tUp" ${idx === 0 ? 'disabled style="opacity:.4"' : ''}>${ic('left')}Move earlier</button><button class="btn soft" id="tDown" ${idx === S.tiles.length - 1 ? 'disabled style="opacity:.4"' : ''}>Move later${ic('right')}</button></div>
@@ -804,15 +968,16 @@ function tileForm(t) {
       q('#tKind').querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.k === kind));
       q('#tIcons').querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.i === icon));
     };
-    q('#tKind').onclick = e => { const b = e.target.closest('button[data-k]'); if (b) { kind = b.dataset.k; if (!iconPicked) icon = KIND_ICON[kind] || icon; if (isNew && !q('#tName').value.trim() && (kind === 'check' || kind === 'pay')) q('#tName').placeholder = kind === 'pay' ? 'e.g. Second job' : 'e.g. Fritz\'s bills'; sync(); } };
+    q('#tKind').onclick = e => { const b = e.target.closest('button[data-k]'); if (b) { kind = b.dataset.k; if (!iconPicked) icon = KIND_ICON[kind] || icon; if (isNew && !q('#tName').value.trim() && (kind === 'check' || kind === 'pay' || kind === 'shop')) q('#tName').placeholder = kind === 'pay' ? 'e.g. Second job' : kind === 'shop' ? 'e.g. Costco, Target' : 'e.g. Fritz\'s bills'; sync(); } };
     q('#tIcons').onclick = e => { const b = e.target.closest('button'); if (b) { icon = b.dataset.i; iconPicked = true; sync(); } };
     sync();
     q('#tSave').onclick = () => {
       const name = q('#tName').value.trim(); if (!name) { toast('Give the tile a name'); q('#tName').focus(); return; }
-      if (isNew) S.tiles.push(Object.assign({id: uid(), name, kind, icon}, kind === 'pay' ? {pay: defPay()} : {}));
+      if (isNew) S.tiles.push(Object.assign({id: uid(), name, kind, icon}, kind === 'pay' ? {pay: defPay()} : {}, kind === 'shop' ? {list: [], recent: []} : {}));
       else {
         if (kind === 'both' && t.kind !== 'both') toBoth(t);
         Object.assign(t, {name, kind, icon}); if (kind === 'pay' && !t.pay) t.pay = defPay();
+        if (kind === 'shop') { t.list = t.list || []; t.recent = t.recent || []; }
       }
       save(); closeTop(); refresh(); toast(isNew ? 'Tile added' : 'Saved');
     };
