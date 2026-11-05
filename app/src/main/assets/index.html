@@ -223,6 +223,12 @@ details.more summary{color:var(--rg);font-weight:800;padding:6px 0;cursor:pointe
 .qadd button{width:50px;flex:none;border-radius:18px;background:var(--grad);color:#fff;display:flex;align-items:center;justify-content:center}
 .qadd button .ic{width:26px;height:26px}
 .again{margin:12px 12px 0}
+.storebar{display:flex;align-items:center;gap:10px;width:calc(100% - 24px);margin:10px 12px 0;padding:11px 14px;background:#fff;border:1px solid var(--line);border-radius:16px;text-align:left;color:var(--ink);font-size:14.5px}
+.storebar .ic{color:var(--rg);width:22px;height:22px}
+.storebar span{flex:1;min-width:0}
+.storebar em{font-style:normal;color:var(--rg);font-weight:800;font-size:13.5px}
+.sbtn{width:40px;height:40px;flex:none;border-radius:50%;background:var(--blush);color:var(--rg);display:flex;align-items:center;justify-content:center}
+.sbtn .ic{width:21px;height:21px}
 .again .chips button{display:flex;align-items:center;gap:3px;padding:7px 12px 7px 9px;font-size:13.5px}
 .again .chips .ic{width:17px;height:17px}
 .fld .amtbox input:not([type=checkbox]){border:0;padding:0;border-radius:0;background:transparent;font-size:38px;font-weight:800;max-width:230px}
@@ -315,6 +321,8 @@ const P = {
   restore:'M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.954 8.954 0 0 0 13 21a9 9 0 0 0 0-18zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z',
   del:'M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z',
   edit:'M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a.996.996 0 0 0 0-1.41l-2.34-2.34a.996.996 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z',
+  search:'M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z',
+  cart:'M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42a.25.25 0 0 1-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49A1.003 1.003 0 0 0 20 4H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z',
   share:'M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11A2.99 2.99 0 0 0 21 5a3 3 0 0 0-6 0c0 .24.04.47.09.7L8.04 9.81A2.99 2.99 0 0 0 3 12a2.99 2.99 0 0 0 5.04 2.19l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z',
   sparkle:'M12 2l2.2 6.3L20.5 10l-6.3 2.2L12 18.5l-2.2-6.3L3.5 10l6.3-1.7zM19 15l1 2.8 2.8 1-2.8 1L19 22.6l-1-2.8-2.8-1 2.8-1z'
 };
@@ -685,6 +693,56 @@ function shopTileHTML(t) {
     <div class="tt rg">${x.need.length ? `${x.need.length} to get` : x.got.length ? 'All got!' : 'Empty'}</div>
     <div class="ts">${x.got.length ? `${x.got.length} in the cart` : x.need.length ? x.need.slice(0, 2).map(i => esc(i.name)).join(', ') + (x.need.length > 2 ? '…' : '') : 'Tap to add things'}${all ? ` · about ${fmt(all)}` : ''}</div></button>`;
 }
+// Stores the list can search. `re` spots the store in statement / transaction names; `u` is its search page
+// (the term is added on the end). The phone opens these in the store's own app when it's installed.
+// MainActivity.openStore only opens these hosts, so a new store needs its host added there too.
+const STORES = [
+  {id: 'walmart', n: 'Walmart', u: 'https://www.walmart.com/search?q=', re: /wal-?mart|wm supercenter/i},
+  {id: 'target', n: 'Target', u: 'https://www.target.com/s?searchTerm=', re: /\btarget\b/i},
+  {id: 'amazon', n: 'Amazon', u: 'https://www.amazon.com/s?k=', re: /amazon|amzn/i},
+  {id: 'costco', n: 'Costco', u: 'https://www.costco.com/s?keyword=', re: /costco/i},
+  {id: 'samsclub', n: 'Sam\'s Club', u: 'https://www.samsclub.com/search?q=', re: /sam'?s\s?club/i},
+  {id: 'kroger', n: 'Kroger', u: 'https://www.kroger.com/search?query=', re: /kroger/i},
+  {id: 'frys', n: 'Fry\'s Food', u: 'https://www.frysfood.com/search?query=', re: /\bfry'?s\b/i},
+  {id: 'safeway', n: 'Safeway', u: 'https://www.safeway.com/shop/search-results.html?q=', re: /safeway/i},
+  {id: 'albertsons', n: 'Albertsons', u: 'https://www.albertsons.com/shop/search-results.html?q=', re: /albertsons/i},
+  {id: 'heb', n: 'H-E-B', u: 'https://www.heb.com/search?q=', re: /\bh-?e-?b\b/i},
+  {id: 'publix', n: 'Publix', u: 'https://www.publix.com/search?searchTerm=', re: /publix/i},
+  {id: 'aldi', n: 'Aldi', u: 'https://www.aldi.us/store/aldi/search/', re: /\baldi\b/i},
+  {id: 'walgreens', n: 'Walgreens', u: 'https://www.walgreens.com/search/results.jsp?Ntt=', re: /walgreens/i},
+  {id: 'cvs', n: 'CVS', u: 'https://www.cvs.com/search?searchTerm=', re: /\bcvs\b/i},
+  {id: 'instacart', n: 'Instacart', u: 'https://www.instacart.com/store/s?k=', re: /instacart/i},
+  {id: 'homedepot', n: 'Home Depot', u: 'https://www.homedepot.com/s/', re: /home\s?depot/i},
+  {id: 'lowes', n: 'Lowe\'s', u: 'https://www.lowes.com/search?searchTerm=', re: /\blowe'?s\b/i},
+  {id: 'bestbuy', n: 'Best Buy', u: 'https://www.bestbuy.com/site/searchpage.jsp?st=', re: /best\s?buy/i},
+  {id: 'google', n: 'Any store (Google)', u: 'https://www.google.com/search?udm=28&q=', re: /^$/}
+];
+const storeOf = id => STORES.find(x => x.id === id);
+// the reader sends "Walmart=14; Amazon=9" -> [{st, n}] for stores we can search, most first
+const readStores = v => String(v || '').split(/[;\n]/).map(p => { const m = p.match(/^\s*(.+?)\s*[=:]\s*(\d+)/); return m && {st: storeFor(m[1]), n: +m[2]}; }).filter(x => x && x.st && x.n).sort((a, b) => b.n - a.n);
+const storeFor = name => STORES.find(x => x.id !== 'google' && x.re.test(name || ''));
+// Where she actually shops: purchases in her money tiles (bills don't count, so Prime doesn't make Amazon look
+// like a shop) plus what the statement reader saw. Most-used first.
+function storeCounts() {
+  const c = Object.assign({}, S.storeHits || {});
+  for (const it of S.items) { const T = tileOf(it.tile); if (!T || T.kind === 'check' || it.pred) continue; const st = storeFor(it.name); if (st) c[st.id] = (c[st.id] || 0) + 1; }
+  return Object.entries(c).filter(([id, n]) => n > 0 && storeOf(id)).sort((a, b) => b[1] - a[1]);
+}
+const shopStore = t => storeOf(t.store) || storeOf((storeCounts()[0] || [])[0]) || storeOf('walmart');
+function openStore(st, term) {
+  const q = encodeURIComponent(term.trim()), url = st.u + (st.u.endsWith('=') ? q.replace(/%20/g, '+') : q);   // path-style search pages keep %20
+  if (window.Native && Native.openStore) Native.openStore(url); else window.open(url, '_blank');
+}
+function pickStore(T) {
+  const counts = storeCounts(), seen = new Map(counts), cur = shopStore(T);
+  const order = [...counts.map(([id]) => storeOf(id)), ...STORES.filter(x => !seen.has(x.id))];
+  const el = sheet('Where do you shop?', `<div class="form">
+    ${counts.length ? `<div class="summary" style="margin-top:14px">From your statements and entries, you shop most at <b>${esc(storeOf(counts[0][0]).n)}</b>. Pick another any time.</div>` : `<div class="hint" style="margin-top:14px">Read a bank statement in Settings and we'll pick the store you use most.</div>`}
+    <div class="list" style="margin:14px 0 0">${order.map(x => `<button class="setrow" data-st="${x.id}"><span style="flex:1">${esc(x.n)}${seen.has(x.id) ? ` <span class="mut" style="font-size:13px">· ${seen.get(x.id)} purchase${seen.get(x.id) === 1 ? '' : 's'}</span>` : ''}</span>${x.id === cur.id ? `<span class="green">${ic('check')}</span>` : ''}</button>`).join('')}</div>
+    <div class="hint">Tapping the store button on an item searches for it at this store. If you have the store's app, it opens there.</div>
+  </div>`, {icon: T.icon});
+  el.querySelectorAll('[data-st]').forEach(b => b.onclick = () => { T.store = b.dataset.st; save(); closeTop(); refresh(); toast(`Shopping at ${storeOf(T.store).n}`); });
+}
 // "2 milk", "2x eggs" or "eggs x2" -> {name, qty}
 function parseShop(txt) {
   let name = txt.trim().replace(/\s+/g, ' '), qty = 1, m;
@@ -705,9 +763,9 @@ function shopRemember(t, items) {
   for (const it of items) { t.recent = t.recent.filter(r => r.name.toLowerCase() !== it.name.toLowerCase()); t.recent.unshift({name: it.name, price: num(it.price)}); }
   t.recent = t.recent.slice(0, 40);
 }
-function shopRow(it) {
+function shopRow(it, st) {
   const line = shopLine(it);
-  return `<div class="row ${it.got ? 'done' : ''}" data-si="${it.id}"><button class="ck ${it.got ? 'on' : ''}" data-sg="${it.id}" aria-label="Got it">${ic('check')}</button><div class="mid"><div class="nm">${esc(it.name)}</div><div class="sub">${num(it.qty) > 1 ? `<span class="tag">× ${num(it.qty)}</span>` : ''}${num(it.price) && num(it.qty) > 1 ? `<span>${fmt(it.price)} each</span>` : ''}${it.note ? `<span>${esc(it.note)}</span>` : ''}</div></div>${line ? `<div class="amt rg">${fmt(line)}</div>` : ''}<span class="pen">${ic('edit')}</span></div>`;
+  return `<div class="row ${it.got ? 'done' : ''}" data-si="${it.id}"><button class="ck ${it.got ? 'on' : ''}" data-sg="${it.id}" aria-label="Got it">${ic('check')}</button><div class="mid"><div class="nm">${esc(it.name)}</div><div class="sub">${num(it.qty) > 1 ? `<span class="tag">× ${num(it.qty)}</span>` : ''}${num(it.price) && num(it.qty) > 1 ? `<span>${fmt(it.price)} each</span>` : ''}${it.note ? `<span>${esc(it.note)}</span>` : ''}</div></div>${line ? `<div class="amt rg">${fmt(line)}</div>` : ''}${st && !it.got ? `<button class="sbtn" data-ss="${it.id}" aria-label="Find at ${esc(st.n)}">${ic('search')}</button>` : `<span class="pen">${ic('edit')}</span>`}</div>`;
 }
 function shareShop(t) {
   const x = shopSums(t);
@@ -728,12 +786,14 @@ function openShop(id) {
     const x = shopSums(T), all = r2(x.needSum + x.gotSum);
     const onList = new Set(T.list.map(i => i.name.toLowerCase()));
     const again = (T.recent || []).filter(r => !onList.has(r.name.toLowerCase())).slice(0, 14);
+    const st = shopStore(T);
     let h = `<div class="qadd"><input id="shIn" placeholder="Add something… e.g. 2 milk" autocomplete="off" enterkeyhint="done" value="${esc(keep)}"><button id="shAdd" aria-label="Add">${ic('add')}</button></div>`;
+    h += `<button class="storebar" data-store>${ic('cart')}<span>Shop at <b>${esc(st.n)}</b>${!T.store && storeCounts().length ? ' · from your statements' : ''}</span><em>Change</em></button>`;
     if (T.list.length) h += `<div class="big"><small>${x.need.length} to get · ${x.got.length} in the cart</small><b class="rg">${all ? fmt(all) : `${T.list.length} thing${T.list.length === 1 ? '' : 's'}`}</b>
       ${all ? `<div class="pb"><i style="width:${x.gotSum / all * 100}%"></i></div><div class="split"><span><em class="green">${fmt(x.gotSum)}</em>In the cart</span><span><em class="rg">${fmt(x.needSum)}</em>Still to get</span></div>` : ''}
       ${x.unpriced && T.list.length > x.unpriced ? `<small>${x.unpriced} without a price</small>` : !all ? `<small>Tap a thing to add a price, and see the total</small>` : ''}</div>`;
-    if (x.need.length) h += `<div class="list">${x.need.map(shopRow).join('')}</div>`;
-    if (x.got.length) h += `<div class="dayh"><span>In the cart</span><button data-clear>${ic('del')}Clear</button></div><div class="list">${x.got.map(shopRow).join('')}</div>`;
+    if (x.need.length) h += `<div class="list">${x.need.map(i => shopRow(i, st)).join('')}</div>${x.need.length ? `<div class="hint" style="text-align:center;margin:8px 16px 0">Tap the magnifying glass to find it at ${esc(st.n)}. Tap the name to change it.</div>` : ''}`;
+    if (x.got.length) h += `<div class="dayh"><span>In the cart</span><button data-clear>${ic('del')}Clear</button></div><div class="list">${x.got.map(i => shopRow(i)).join('')}</div>`;
     if (x.got.length) h += `<div class="shopb"><button class="btn" data-done>${ic('check')}Done shopping</button></div>`;
     if (!T.list.length) h += `<div class="empty"><div class="ei">${cute(T.icon, 84)}</div>Your list is empty.<br>Type what you need above and tap <b>+</b>.<br>In the store, tap the circle to cross it off.</div>`;
     if (again.length) h += `<div class="again"><div class="dayh" style="margin:6px 4px 8px"><span>Buy again</span></div><div class="chips">${again.map(r => `<button data-again="${esc(r.name)}">${ic('add')}${esc(r.name)}</button>`).join('')}</div></div>`;
@@ -755,6 +815,8 @@ function openShop(id) {
       const it = T.list.find(i => i.id === b.dataset.sg); if (!it) return;
       it.got = !it.got; save(); renderHome(); draw();
     });
+    q('[data-store]').onclick = () => pickStore(T);
+    el.querySelectorAll('[data-ss]').forEach(b => b.onclick = ev => { ev.stopPropagation(); const it = T.list.find(i => i.id === b.dataset.ss); if (it) openStore(st, it.name); });
     el.querySelectorAll('[data-si]').forEach(r => r.onclick = () => { const it = T.list.find(i => i.id === r.dataset.si); if (it) shopItemForm(T, it); });
     if (q('[data-clear]')) q('[data-clear]').onclick = () => {
       shopRemember(T, x.got); T.list = T.list.filter(i => !i.got); save(); refresh(); toast('Cleared');
@@ -799,6 +861,7 @@ function shopItemForm(T, it) {
     <div class="fld"><label>Price each (optional)</label><div class="amtbox" style="margin:0"><span class="sg rg">${esc(S.currency)}</span><input id="iPrice" class="rg" inputmode="decimal" placeholder="0.00" value="${num(it.price) ? r2(it.price).toFixed(2) : ''}" autocomplete="off"></div><div class="hint" id="iLine"></div></div>
     <div class="fld"><label>Note (optional)</label><input id="iNote" value="${esc(it.note || '')}" placeholder="e.g. the big one, any brand"></div>
     <button class="btn" id="iSave">${ic('check')}Save</button>
+    <button class="btn soft" id="iFind">${ic('search')}Find it at ${esc(shopStore(T).n)}</button>
     <button class="btn ghost" id="iDel">${ic('del')}Take off the list</button>
   </div>`;
   sheet('Edit item', body, {icon: T.icon, mount: el => {
@@ -813,6 +876,7 @@ function shopItemForm(T, it) {
       Object.assign(it, {name, qty: qty(), price: p > 0 ? p : 0, note: q('#iNote').value.trim()});
       save(); closeTop(); refresh(); toast('Saved');
     };
+    q('#iFind').onclick = () => openStore(shopStore(T), q('#iName').value.trim() || it.name);
     q('#iDel').onclick = () => { shopRemember(T, [it]); T.list = T.list.filter(i => i.id !== it.id); save(); closeTop(); refresh(); toast('Taken off'); };
   }});
 }
@@ -1579,7 +1643,7 @@ function reviewRead(r, focusPayId) {
   const row = (k, v) => `<div class="xrow"><span>${k}</span><b>${v}</b></div>`;
   const known = new Set(S.items.filter(i => budT && i.tile === budT.id).map(i => (i.name || '').toLowerCase()));
   const el = sheet('Here\'s what we found', `<div class="form">
-    ${!stubs.length && !bills.length && !pays.length ? `<div class="empty">Nothing usable came back. Try a clearer photo or the PDF from your payroll site.</div>` : ''}
+    ${!stubs.length && !bills.length && !pays.length && !readStores(r.shopping_stores).length ? `<div class="empty">Nothing usable came back. Try a clearer photo or the PDF from your payroll site.</div>` : ''}
     ${np ? `<div class="list" style="margin:12px 0 0;padding:12px 16px">
       <div style="font-weight:800;margin-bottom:4px">Your pay${stubs[0].employer ? ' · ' + esc(stubs[0].employer) : ''}</div>
       ${row('Hourly rate', fmt(np.rate) + '/hr')}${row('Paid', np.every === 7 ? 'every week' : 'every 2 weeks')}
@@ -1601,6 +1665,7 @@ function reviewRead(r, focusPayId) {
     ${bills.length && budT ? `<div class="list" style="margin:12px 0 0;padding:12px 16px"><div style="font-weight:800">Bills that repeat</div>
       ${bills.map((b, i) => `<label class="tilerow" style="padding-left:0"><span style="flex:1">${esc(b.name)}<br><span class="mut" style="font-size:13px">${fmt(b.amount)} · ${b.frequency === 'every_2_weeks' ? 'every 2 weeks' : b.frequency === 'weekly' ? 'weekly' : b.frequency === 'yearly' ? 'yearly' : 'monthly'}${num(b.day_of_month) ? ' · around the ' + ord(num(b.day_of_month)) : ''}</span></span><input type="checkbox" data-bill="${i}" ${known.has(String(b.name).toLowerCase()) ? '' : 'checked'}></label>`).join('')}
       <div class="hint">Ticked ones are added to ${esc(budT.name)} as repeating bills. Untick anything that isn't a bill.</div></div>` : ''}
+    ${(() => { const ss = readStores(r.shopping_stores); return ss.length ? `<div class="list" style="margin:12px 0 0;padding:12px 16px"><div style="font-weight:800">Where you shop</div>${ss.slice(0, 5).map(x => row(esc(x.st.n), `${x.n} purchase${x.n === 1 ? '' : 's'}`)).join('')}<div class="hint">Your Shopping list will search ${esc(ss[0].st.n)} first. You can change it there.</div></div>` : ''; })()}
     <button class="btn" id="rvSave">${ic('check')}Save</button>
     <div class="hint" style="text-align:center">You can change anything later: Pay settings, or the pencil on any bill.</div>
   </div>`, {icon: 'calc'});
@@ -1614,6 +1679,7 @@ function reviewRead(r, focusPayId) {
       S.tiles.push({id: uid(), name: 'Paycheck', kind: 'pay', icon: 'calc', pay: Object.assign(np, {fix3: true})}); msg.push('Paycheck tile added');
     }
     if (earnT) { let n = 0; el.querySelectorAll('[data-pc]').forEach(c => { if (!c.checked || c.disabled) return; const x = pays[+c.dataset.pc]; S.items.push({id: uid(), tile: earnT.id, name: 'Paycheck', amt: r2(num(x.amount)), date: x.date, rep: null, note: x.from || 'From a bank statement', done: {}, skip: {}}); n++; }); if (n) msg.push(`${n} paycheck${n > 1 ? 's' : ''}`); }
+    for (const x of readStores(r.shopping_stores)) { S.storeHits = S.storeHits || {}; S.storeHits[x.st.id] = Math.max(S.storeHits[x.st.id] || 0, x.n); }
     if (budT) {
       let n = 0;
       el.querySelectorAll('[data-bill]').forEach(c => {
