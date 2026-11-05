@@ -223,6 +223,7 @@ details.more summary{color:var(--rg);font-weight:800;padding:6px 0;cursor:pointe
 .qadd button{width:50px;flex:none;border-radius:18px;background:var(--grad);color:#fff;display:flex;align-items:center;justify-content:center}
 .qadd button .ic{width:26px;height:26px}
 .again{margin:12px 12px 0}
+.tag .ic{width:13px;height:13px}
 .storebar{display:flex;align-items:center;gap:10px;width:calc(100% - 24px);margin:10px 12px 0;padding:11px 14px;background:#fff;border:1px solid var(--line);border-radius:16px;text-align:left;color:var(--ink);font-size:14.5px}
 .storebar .ic{color:var(--rg);width:22px;height:22px}
 .storebar span{flex:1;min-width:0}
@@ -323,6 +324,8 @@ const P = {
   edit:'M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a.996.996 0 0 0 0-1.41l-2.34-2.34a.996.996 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z',
   search:'M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z',
   cart:'M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42a.25.25 0 0 1-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49A1.003 1.003 0 0 0 20 4H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z',
+  link:'M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z',
+  open:'M19 19H5V5h7V3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z',
   share:'M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11A2.99 2.99 0 0 0 21 5a3 3 0 0 0-6 0c0 .24.04.47.09.7L8.04 9.81A2.99 2.99 0 0 0 3 12a2.99 2.99 0 0 0 5.04 2.19l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z',
   sparkle:'M12 2l2.2 6.3L20.5 10l-6.3 2.2L12 18.5l-2.2-6.3L3.5 10l6.3-1.7zM19 15l1 2.8 2.8 1-2.8 1L19 22.6l-1-2.8-2.8-1 2.8-1z'
 };
@@ -572,8 +575,8 @@ function renderHome() {
   $('#mLbl').textContent = mLabel(curM);
   $('#totH').textContent = `${MON[+curM.slice(5) - 1]} totals`;
   const tt = S.tiles.filter(t => !t.hidden).map(t => ({t, x: tileTotals(t, curM)}));
-  $('#tgrid').innerHTML = tt.filter(({t}) => t.kind !== 'pay' && t.kind !== 'shop').map(({t, x}) => `<div class="tg"><small>${esc(t.name)}</small><b class="${totCls(t, x.total)}">${totTxt(t, x.total)}</b>${t.kind === 'check' ? `<i>${fmt(x.paid)} paid</i>` : `<i>${x.count} ${x.count === 1 ? 'entry' : 'entries'}</i>`}</div>`).join('');
-  $('#tiles').innerHTML = tt.map(({t, x}) => t.kind === 'pay' ? payTileHTML(t) : t.kind === 'shop' ? shopTileHTML(t) : `<button class="tile" data-t="${t.id}"><div class="ti">${cute(t.icon, 46)}</div><div class="tn">${esc(t.name)}</div>
+  $('#tgrid').innerHTML = tt.filter(({t}) => !['pay', 'shop', 'gift'].includes(t.kind)).map(({t, x}) => `<div class="tg"><small>${esc(t.name)}</small><b class="${totCls(t, x.total)}">${totTxt(t, x.total)}</b>${t.kind === 'check' ? `<i>${fmt(x.paid)} paid</i>` : `<i>${x.count} ${x.count === 1 ? 'entry' : 'entries'}</i>`}</div>`).join('');
+  $('#tiles').innerHTML = tt.map(({t, x}) => t.kind === 'pay' ? payTileHTML(t) : t.kind === 'shop' ? shopTileHTML(t) : t.kind === 'gift' ? giftTileHTML(t) : `<button class="tile" data-t="${t.id}"><div class="ti">${cute(t.icon, 46)}</div><div class="tn">${esc(t.name)}</div>
       <div class="tt ${totCls(t, x.total)}">${totTxt(t, x.total)}</div>
       ${t.kind === 'check' ? `<div class="ts">${x.doneCount} of ${x.count} paid${(() => { const n = overdueBefore(t, curM).length + x.list.filter(e => !e.done && e.d < today()).length; return n ? ` · <span class="red">${n} overdue</span>` : ''; })()}</div><div class="pb"><i style="width:${x.total > 0 ? x.paid / x.total * 100 : 0}%"></i></div>` : t.kind === 'both' || (x.inSum && x.outSum) ? `<div class="ts"><span class="green">+${fmt(x.inSum)}</span> · <span class="red">${MINUS}${fmt(x.outSum)}</span></div>` : `<div class="ts">${x.count} ${x.count === 1 ? 'entry' : 'entries'} this month</div>`}
     </button>`).join('') + `<button class="tile add" id="addTile"><span class="plus">${ic('add')}</span>Add a tile</button>`;
@@ -585,6 +588,7 @@ function renderHome() {
 function openTile(id) {
   if ((tileOf(id) || {}).kind === 'pay') return openPay(id);
   if ((tileOf(id) || {}).kind === 'shop') return openShop(id);
+  if ((tileOf(id) || {}).kind === 'gift') return openGift(id);
   let mode = 'list', selDay = null;
   const t = tileOf(id);
   const el = sheet(t.name, '', {icon: t.icon, head: `<button class="ib" data-more aria-label="Edit tile">${ic('more')}</button>`, fab: () => itemForm({tile: id, date: selDay || defDate()})});
@@ -729,9 +733,39 @@ function storeCounts() {
   return Object.entries(c).filter(([id, n]) => n > 0 && storeOf(id)).sort((a, b) => b[1] - a[1]);
 }
 const shopStore = t => storeOf(t.store) || storeOf((storeCounts()[0] || [])[0]) || storeOf('walmart');
-function openStore(st, term) {
-  const q = encodeURIComponent(term.trim()), url = st.u + (st.u.endsWith('=') ? q.replace(/%20/g, '+') : q);   // path-style search pages keep %20
-  if (window.Native && Native.openStore) Native.openStore(url); else window.open(url, '_blank');
+function storeUrl(st, term) {
+  const q = encodeURIComponent(term.trim());
+  return affLink(st.u + (st.u.endsWith('=') ? q.replace(/%20/g, '+') : q));   // path-style search pages keep %20
+}
+function openUrl(url) {
+  if (window.Native && Native.openLink) Native.openLink(url);
+  else if (window.Native && Native.openStore) Native.openStore(url);   // phones still on 2.11
+  else window.open(url, '_blank');
+}
+const openStore = (st, term) => openUrl(storeUrl(st, term));
+
+/* Affiliate links. The settings come from the reader server (GET /config), so a store's affiliate ID can be
+   turned on or changed without a new app version. Shape: {stores: {amazon: {param: {tag: "x-20"}},
+   walmart: {wrap: "https://goto.walmart.com/c/...?u={url}"}}, disclose: "..."}. A link that already carries
+   someone's tag is left alone. */
+function affFor(url) {
+  let u; try { u = new URL(url); } catch (e) { return null; }
+  const host = u.hostname.replace(/^www\./, '');
+  const st = STORES.find(x => new URL(x.u).hostname.replace(/^www\./, '') === host || (x.id === 'amazon' && /(^|\.)amazon\.com$/.test(host)));
+  const c = st && S.aff && S.aff.stores && S.aff.stores[st.id];
+  return c ? {u, c} : null;
+}
+function affLink(url) {
+  const a = affFor(url); if (!a) return url;
+  if (a.c.param) { for (const k of Object.keys(a.c.param)) if (a.u.searchParams.has(k)) return url; for (const [k, v] of Object.entries(a.c.param)) a.u.searchParams.set(k, v); return a.u.toString(); }
+  if (a.c.wrap) return a.c.wrap.replace('{url}', encodeURIComponent(url));
+  return url;
+}
+const affOn = () => !!(S.aff && S.aff.stores && Object.keys(S.aff.stores).length);
+const affNote = () => affOn() && S.aff.disclose ? `<div class="hint" style="text-align:center;margin:14px 20px 0;font-size:11.5px">${esc(S.aff.disclose)}</div>` : '';
+function fetchAff() {
+  const api = window.MT_API; if (!api || !api.url || Date.now() - (S.affAt || 0) < 12 * 36e5) return;
+  fetch(api.url.replace(/\/read$/, '/config')).then(r => r.ok ? r.json() : null).then(c => { if (c && typeof c === 'object') { S.aff = c.aff || {}; S.affAt = Date.now(); save(); } }).catch(() => {});
 }
 function pickStore(T) {
   const counts = storeCounts(), seen = new Map(counts), cur = shopStore(T);
@@ -797,7 +831,7 @@ function openShop(id) {
     if (x.got.length) h += `<div class="shopb"><button class="btn" data-done>${ic('check')}Done shopping</button></div>`;
     if (!T.list.length) h += `<div class="empty"><div class="ei">${cute(T.icon, 84)}</div>Your list is empty.<br>Type what you need above and tap <b>+</b>.<br>In the store, tap the circle to cross it off.</div>`;
     if (again.length) h += `<div class="again"><div class="dayh" style="margin:6px 4px 8px"><span>Buy again</span></div><div class="chips">${again.map(r => `<button data-again="${esc(r.name)}">${ic('add')}${esc(r.name)}</button>`).join('')}</div></div>`;
-    h += `<div style="height:40px"></div>`;
+    h += affNote() + `<div style="height:40px"></div>`;
     el.querySelector('.sb').innerHTML = h;
     const q = s => el.querySelector(s), inp = q('#shIn');
     const add = () => {
@@ -878,6 +912,113 @@ function shopItemForm(T, it) {
     };
     q('#iFind').onclick = () => openStore(shopStore(T), q('#iName').value.trim() || it.name);
     q('#iDel').onclick = () => { shopRemember(T, [it]); T.list = T.list.filter(i => i.id !== it.id); save(); closeTop(); refresh(); toast('Taken off'); };
+  }});
+}
+
+/* ---------- GIFT LIST ---------- */
+// Gifts grouped by who they're for. Each gift can hold a link from any store; without one, the button searches
+// the tile's store. Sharing sends the list with links, so it works as a wish list too.
+function giftTile() { return {id: uid(), name: 'Gift list', kind: 'gift', icon: 'gift', list: []}; }
+const giftWho = it => (it.who || '').trim() || 'Not sure yet';
+function giftPeople(T) {
+  const g = new Map();
+  for (const it of T.list || []) { const k = giftWho(it); if (!g.has(k)) g.set(k, []); g.get(k).push(it); }
+  return [...g.entries()].sort((a, b) => (a[0] === 'Not sure yet') - (b[0] === 'Not sure yet') || a[0].localeCompare(b[0]));
+}
+function giftTileHTML(t) {
+  const L = t.list || [], got = L.filter(x => x.got).length, all = r2(sum(L, x => num(x.price))), ppl = giftPeople(t).length;
+  return `<button class="tile" data-t="${t.id}"><div class="ti">${cute(t.icon, 46)}</div><div class="tn">${esc(t.name)}</div>
+    <div class="tt rg">${L.length ? `${L.length - got} to buy` : 'Empty'}</div>
+    <div class="ts">${L.length ? `${ppl} ${ppl === 1 ? 'person' : 'people'} · ${got} bought${all ? ' · ' + fmt(all) : ''}` : 'Tap to add gift ideas'}</div></button>`;
+}
+// "Lego set for Mia" -> {name: "Lego set", who: "Mia"}
+function parseGift(txt) {
+  let name = txt.trim().replace(/\s+/g, ' '), who = '', m;
+  if ((m = name.match(/^(.+?)\s+for\s+(.+)$/i))) { name = m[1]; who = m[2]; }
+  const cap = v => v.charAt(0).toUpperCase() + v.slice(1);
+  return {name: cap(name), who: who ? cap(who) : ''};
+}
+const giftHref = (T, it) => it.link ? affLink(it.link) : storeUrl(shopStore(T), it.name);
+function giftRow(T, it) {
+  const host = it.link ? (() => { try { return new URL(it.link).hostname.replace(/^www\./, ''); } catch (e) { return 'link'; } })() : '';
+  return `<div class="row ${it.got ? 'done' : ''}" data-gi="${it.id}"><button class="ck ${it.got ? 'on' : ''}" data-gg="${it.id}" aria-label="Bought">${ic('check')}</button><div class="mid"><div class="nm">${esc(it.name)}</div><div class="sub">${host ? `<span class="tag">${ic('link')}${esc(host)}</span>` : ''}${it.note ? `<span>${esc(it.note)}</span>` : ''}</div></div>${num(it.price) ? `<div class="amt rg">${fmt(it.price)}</div>` : ''}${!it.got ? `<button class="sbtn" data-go="${it.id}" aria-label="${it.link ? 'Open link' : 'Find it'}">${ic(it.link ? 'open' : 'search')}</button>` : `<span class="pen">${ic('edit')}</span>`}</div>`;
+}
+function shareGift(T) {
+  const ppl = giftPeople(T).map(([who, L]) => [who, L.filter(i => !i.got)]).filter(([, L]) => L.length);
+  if (!ppl.length) { toast('Nothing left to buy'); return; }
+  const txt = `${T.name} 🎁\n` + ppl.map(([who, L]) => `\n${who === 'Not sure yet' ? 'Ideas' : who}:\n` + L.map(i => `• ${i.name}${num(i.price) ? ' (' + fmt(i.price) + ')' : ''}${i.note ? ', ' + i.note : ''}\n  ${giftHref(T, i)}`).join('\n')).join('\n');
+  try { Native.share(T.name, txt); } catch (e) { try { navigator.clipboard.writeText(txt); toast('List copied'); } catch (e2) { toast('Sharing isn\'t available here'); } }
+}
+function openGift(id) {
+  let keep = '';
+  const t0 = tileOf(id);
+  const el = sheet(t0.name, '', {icon: t0.icon, head: `<button class="ib" data-share aria-label="Share list">${ic('share')}</button><button class="ib" data-more aria-label="Edit tile">${ic('more')}</button>`});
+  el.querySelector('[data-more]').onclick = () => tileForm(tileOf(id));
+  el.querySelector('[data-share]').onclick = () => shareGift(tileOf(id));
+  const draw = focus => {
+    const T = tileOf(id); if (!T) return;
+    T.list = T.list || [];
+    el.querySelector('h2').innerHTML = `<span class="mini">${cute(T.icon, 26)}</span><span>${esc(T.name)}</span>`;
+    const st = shopStore(T), L = T.list, got = L.filter(i => i.got), all = r2(sum(L, i => num(i.price))), spent = r2(sum(got, i => num(i.price)));
+    let h = `<div class="qadd"><input id="gIn" placeholder="Add a gift… e.g. Lego set for Mia" autocomplete="off" enterkeyhint="done" value="${esc(keep)}"><button id="gAdd" aria-label="Add">${ic('add')}</button></div>`;
+    h += `<button class="storebar" data-store>${ic('cart')}<span>Find gifts at <b>${esc(st.n)}</b></span><em>Change</em></button>`;
+    if (L.length) h += `<div class="big"><small>${L.length - got.length} to buy · ${got.length} bought</small><b class="rg">${all ? fmt(all) : `${L.length} gift${L.length === 1 ? '' : 's'}`}</b>
+      ${all ? `<div class="pb"><i style="width:${spent / all * 100}%"></i></div><div class="split"><span><em class="green">${fmt(spent)}</em>Bought</span><span><em class="rg">${fmt(all - spent)}</em>Still to buy</span></div>` : '<small>Tap a gift to add a price or a link</small>'}</div>`;
+    for (const [who, G] of giftPeople(T)) {
+      const tot = r2(sum(G, i => num(i.price)));
+      h += `<div class="dayh"><span>${esc(who)}</span><span class="mut" style="font-size:13px">${G.filter(i => i.got).length} of ${G.length} bought${tot ? ' · ' + fmt(tot) : ''}</span></div><div class="list">${G.map(i => giftRow(T, i)).join('')}</div>`;
+    }
+    if (got.length) h += `<div class="shopb"><button class="btn soft" data-clear>${ic('del')}Clear bought gifts</button></div>`;
+    if (!L.length) h += `<div class="empty"><div class="ei">${cute(T.icon, 84)}</div>No gift ideas yet.<br>Type one above, like <b>Lego set for Mia</b>.<br>Tap a gift to add a price or paste a link from any store.<br>Share sends the whole list, links included.</div>`;
+    h += affNote() + `<div style="height:40px"></div>`;
+    el.querySelector('.sb').innerHTML = h;
+    const q = s => el.querySelector(s), inp = q('#gIn');
+    const add = () => {
+      const v = inp.value.trim(); if (!v) { inp.focus(); return; }
+      for (const part of v.split(/\s*[;\n]\s*/).filter(Boolean)) { const g = parseGift(part); if (g.name) T.list.push({id: uid(), name: g.name, who: g.who, price: 0, link: '', got: false}); }
+      keep = ''; save(); renderHome(); draw(true);
+    };
+    inp.oninput = () => { keep = inp.value; };
+    inp.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); add(); } };
+    q('#gAdd').onclick = add;
+    q('[data-store]').onclick = () => pickStore(T);
+    el.querySelectorAll('[data-gg]').forEach(b => b.onclick = ev => { ev.stopPropagation(); const it = L.find(i => i.id === b.dataset.gg); if (it) { it.got = !it.got; save(); renderHome(); draw(); } });
+    el.querySelectorAll('[data-go]').forEach(b => b.onclick = ev => { ev.stopPropagation(); const it = L.find(i => i.id === b.dataset.go); if (it) openUrl(giftHref(T, it)); });
+    el.querySelectorAll('[data-gi]').forEach(r => r.onclick = () => { const it = L.find(i => i.id === r.dataset.gi); if (it) giftItemForm(T, it); });
+    if (q('[data-clear]')) q('[data-clear]').onclick = async () => { if (!await ask('Clear bought gifts?', `${got.length} bought gift${got.length === 1 ? '' : 's'} will be taken off the list.`, 'Clear')) return; T.list = L.filter(i => !i.got); save(); refresh(); toast('Cleared'); };
+    if (focus) setTimeout(() => inp.focus(), 50);
+  };
+  el._draw = () => draw(); draw();
+  return el;
+}
+// A pasted share text often has words around the link ("Check this out! https://a.co/..."): keep just the link.
+const cleanLink = v => { const m = String(v || '').match(/https?:\/\/\S+/i); return m ? m[0].replace(/[).,]+$/, '') : ''; };
+function giftItemForm(T, it) {
+  const people = [...new Set((T.list || []).map(i => (i.who || '').trim()).filter(Boolean))];
+  const body = `<div class="form">
+    <div class="fld" style="margin-top:14px"><label>What's the gift?</label><input id="gName" value="${esc(it.name)}" autocomplete="off"></div>
+    <div class="fld"><label>Who is it for?</label><input id="gWho" list="gPeople" value="${esc(it.who || '')}" placeholder="e.g. Mia" autocomplete="off"><datalist id="gPeople">${people.map(n => `<option value="${esc(n)}">`).join('')}</datalist></div>
+    <div class="fld"><label>Price (optional)</label><div class="amtbox" style="margin:0"><span class="sg rg">${esc(S.currency)}</span><input id="gPrice" class="rg" inputmode="decimal" placeholder="0.00" value="${num(it.price) ? r2(it.price).toFixed(2) : ''}" autocomplete="off"></div></div>
+    <div class="fld"><label>Link (optional)</label><input id="gLink" type="url" inputmode="url" value="${esc(it.link || '')}" placeholder="Paste a link from any store" autocomplete="off"><div class="hint">In a store's app, tap Share on the item, then Copy, and paste it here.</div></div>
+    <div class="fld"><label>Note (optional)</label><input id="gNote" value="${esc(it.note || '')}" placeholder="e.g. size 6, the blue one"></div>
+    <button class="btn" id="gSave">${ic('check')}Save</button>
+    <button class="btn soft" id="gOpen">${ic(it.link ? 'open' : 'search')}<span id="gOpenT"></span></button>
+    <button class="btn ghost" id="gDel">${ic('del')}Take off the list</button>
+  </div>`;
+  sheet('Edit gift', body, {icon: T.icon, mount: el => {
+    const q = s => el.querySelector(s);
+    const sync = () => { q('#gOpenT').textContent = cleanLink(q('#gLink').value) ? 'Open the link' : `Find it at ${shopStore(T).n}`; };
+    el.addEventListener('input', sync); sync();
+    q('#gSave').onclick = () => {
+      const name = q('#gName').value.trim(); if (!name) { toast('Give it a name'); return; }
+      const raw = q('#gLink').value.trim(), link = cleanLink(raw);
+      if (raw && !link) { toast('That link should start with https://'); return; }
+      const p = money(q('#gPrice').value);
+      Object.assign(it, {name, who: q('#gWho').value.trim(), price: p > 0 ? p : 0, link, note: q('#gNote').value.trim()});
+      save(); closeTop(); refresh(); toast('Saved');
+    };
+    q('#gOpen').onclick = () => { const l = cleanLink(q('#gLink').value); openUrl(l ? affLink(l) : storeUrl(shopStore(T), q('#gName').value.trim() || it.name)); };
+    q('#gDel').onclick = () => { T.list = T.list.filter(i => i.id !== it.id); save(); closeTop(); refresh(); toast('Taken off'); };
   }});
 }
 
@@ -1001,11 +1142,12 @@ const KINDS = [
   {k: 'check', t: 'Budget', d: 'A checklist of bills. Tick each one off when it\'s paid.', sw: '\u2713', c: 'var(--rg3)', fc: 'var(--rg)', main: true},
   {k: 'pay', t: 'Paycheck', d: 'Plan your hours on a calendar and see each check, overtime and deductions included.', sw: '$', c: '#FFF1D2', fc: '#B7862F', main: true},
   {k: 'shop', t: 'Shopping list', d: 'Things to buy. Cross them off in the store.', sw: cute('cart', 26), c: 'var(--rg3)', fc: 'var(--rg)', main: true},
+  {k: 'gift', t: 'Gift list', d: 'Gift ideas by person, with links from any store. Share it as a wish list.', sw: cute('gift', 26), c: 'var(--rg3)', fc: 'var(--rg)', main: true},
   {k: 'both', t: 'Money in and out', d: 'Like savings: add what goes in and what comes out.', sw: '\u00b1', c: '#EEF3FB', fc: '#5C6BC0'},
   {k: 'in', t: 'Money coming in', d: 'Like Earnings. Shows in green with a +.', sw: '+', c: '#E3F4E9', fc: 'var(--green)'},
   {k: 'out', t: 'Money going out', d: 'Like Transactions. Shows in red with a \u2212.', sw: MINUS, c: '#FBE3E5', fc: 'var(--red)'}
 ];
-const KIND_ICON = {check: 'clip', pay: 'calc', shop: 'cart', both: 'star', in: 'piggy', out: 'bag'};
+const KIND_ICON = {check: 'clip', pay: 'calc', shop: 'cart', gift: 'gift', both: 'star', in: 'piggy', out: 'bag'};
 // Turning a one-way tile into in-and-out keeps every old entry going the way it did.
 function toBoth(t) {
   const was = t.kind === 'in' || t.kind === 'out' ? t.kind : 'out';
@@ -1021,7 +1163,7 @@ function tileForm(t) {
   return sheet(isNew ? 'New tile' : 'Edit tile', `<div class="form">
     <div class="fld"><label>Tile name</label><input id="tName" value="${esc(t ? t.name : '')}" placeholder="e.g. Savings, Kids, Pets"></div>
     <div class="fld"><label>What kind of tile?</label><div class="kinds" id="tKind">${(() => { const b = o => `<button data-k="${o.k}"><span class="sw" style="background:${o.c};color:${o.fc}">${o.sw}</span><span><b>${o.t}</b>${o.d}</span></button>`;
-      return KINDS.filter(o => o.main).map(b).join('') + `<details class="more" ${t && !['check', 'pay', 'shop'].includes(t.kind) ? 'open' : ''}><summary>More kinds (money in / out)</summary><div class="kinds" style="margin-top:8px">${KINDS.filter(o => !o.main).map(b).join('')}</div></details>`; })()}</div></div>
+      return KINDS.filter(o => o.main).map(b).join('') + `<details class="more" ${t && !['check', 'pay', 'shop', 'gift'].includes(t.kind) ? 'open' : ''}><summary>More kinds (money in / out)</summary><div class="kinds" style="margin-top:8px">${KINDS.filter(o => !o.main).map(b).join('')}</div></details>`; })()}</div></div>
     <div class="fld"><label>Pick an icon</label><div class="icons" id="tIcons">${Object.keys(CUTE).map(k => `<button data-i="${k}">${cute(k)}</button>`).join('')}</div></div>
     <button class="btn" id="tSave">${ic('check')}${isNew ? 'Add tile' : 'Save'}</button>
     ${!isNew ? `<div style="display:flex;gap:8px"><button class="btn soft" id="tUp" ${idx === 0 ? 'disabled style="opacity:.4"' : ''}>${ic('left')}Move earlier</button><button class="btn soft" id="tDown" ${idx === S.tiles.length - 1 ? 'disabled style="opacity:.4"' : ''}>Move later${ic('right')}</button></div>
@@ -1032,16 +1174,16 @@ function tileForm(t) {
       q('#tKind').querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.k === kind));
       q('#tIcons').querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.i === icon));
     };
-    q('#tKind').onclick = e => { const b = e.target.closest('button[data-k]'); if (b) { kind = b.dataset.k; if (!iconPicked) icon = KIND_ICON[kind] || icon; if (isNew && !q('#tName').value.trim() && (kind === 'check' || kind === 'pay' || kind === 'shop')) q('#tName').placeholder = kind === 'pay' ? 'e.g. Second job' : kind === 'shop' ? 'e.g. Costco, Target' : 'e.g. Fritz\'s bills'; sync(); } };
+    q('#tKind').onclick = e => { const b = e.target.closest('button[data-k]'); if (b) { kind = b.dataset.k; if (!iconPicked) icon = KIND_ICON[kind] || icon; if (isNew && !q('#tName').value.trim() && (kind === 'check' || kind === 'pay' || kind === 'shop' || kind === 'gift')) q('#tName').placeholder = kind === 'pay' ? 'e.g. Second job' : kind === 'shop' ? 'e.g. Costco, Target' : kind === 'gift' ? 'e.g. Christmas 2026, Birthdays' : 'e.g. Fritz\'s bills'; sync(); } };
     q('#tIcons').onclick = e => { const b = e.target.closest('button'); if (b) { icon = b.dataset.i; iconPicked = true; sync(); } };
     sync();
     q('#tSave').onclick = () => {
       const name = q('#tName').value.trim(); if (!name) { toast('Give the tile a name'); q('#tName').focus(); return; }
-      if (isNew) S.tiles.push(Object.assign({id: uid(), name, kind, icon}, kind === 'pay' ? {pay: defPay()} : {}, kind === 'shop' ? {list: [], recent: []} : {}));
+      if (isNew) S.tiles.push(Object.assign({id: uid(), name, kind, icon}, kind === 'pay' ? {pay: defPay()} : {}, kind === 'shop' ? {list: [], recent: []} : {}, kind === 'gift' ? {list: []} : {}));
       else {
         if (kind === 'both' && t.kind !== 'both') toBoth(t);
         Object.assign(t, {name, kind, icon}); if (kind === 'pay' && !t.pay) t.pay = defPay();
-        if (kind === 'shop') { t.list = t.list || []; t.recent = t.recent || []; }
+        if (kind === 'shop' || kind === 'gift') { t.list = t.list || []; if (kind === 'shop') t.recent = t.recent || []; }
       }
       save(); closeTop(); refresh(); toast(isNew ? 'Tile added' : 'Saved');
     };
@@ -1867,7 +2009,7 @@ function boot() {
   $('#mPrev').onclick = () => { curM = mShift(curM, -1); refresh(); };
   $('#mNext').onclick = () => { curM = mShift(curM, 1); refresh(); };
   $('#mLbl').onclick = () => { curM = today().slice(0, 7); refresh(); };
-  load(); applyTheme(S.theme); syncPredictions(); renderHome();
+  load(); applyTheme(S.theme); syncPredictions(); renderHome(); fetchAff();
   setTimeout(() => checkUpdate(false), 1500);
   // The phone app keeps a report if it ever crashed; show it once so she can send it to Fritz.
   const crash = window.Native && Native.lastCrash ? Native.lastCrash() : '';
