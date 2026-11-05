@@ -283,6 +283,7 @@ details.more summary{color:var(--rg);font-weight:800;padding:6px 0;cursor:pointe
 <section class="totals"><h3 id="totH"></h3><div class="tgrid" id="tgrid"></div></section>
 <section class="tiles" id="tiles"></section>
 
+<script src="config.js"></script>
 <script src="seed.js"></script>
 <script>
 'use strict';
@@ -916,8 +917,9 @@ function openPay(id) {
     const T = tileOf(id); if (!T) return;
     const p = T.pay;
     if (!num(p.rate) || !p.start) {
-      el.querySelector('.sb').innerHTML = `<div class="empty"><div class="ei">${cute('calc', 84)}</div>Set up your pay once and this tile predicts every paycheck.<br><button class="btn" data-go>${ic('gear')}Set up my pay</button></div>`;
+      el.querySelector('.sb').innerHTML = `<div class="empty"><div class="ei">${cute('calc', 84)}</div>Set up your pay once and this tile predicts every paycheck.${readerOn() ? `<br><button class="btn" data-read>${ic('add')}Set up from a pay stub</button><div class="hint">Take a photo of a pay stub or pick the PDF. The app reads it and fills everything in.</div>` : ''}<br><button class="btn ${readerOn() ? 'soft' : ''}" data-go>${ic('gear')}Set up by hand</button></div>`;
       el.querySelector('[data-go]').onclick = () => paySettings(id);
+      if (el.querySelector('[data-read]')) el.querySelector('[data-read]').onclick = () => openReader(id);
       return;
     }
     const t0 = today(), cap = num(p.otAfter) || 40, days = num(p.every) || 14;
@@ -959,7 +961,7 @@ function openPay(id) {
         return `<div class="row" data-check="${x.start}"><div class="bub in">$</div><div class="mid"><div class="nm">${dayH(x.payday)}</div><div class="sub"><span>for ${shortD(x.start)}–${shortD(x.end)} · ${hrs(cc.worked)}${cc.ot ? `, ${hrs(cc.ot)} OT` : ''}</span>${pl.third ? '<span class="tag">3rd check: no insurance</span>' : ''}${holidaysIn(p, x).map(z => `<span class="tag">${esc(z.name)}</span>`).join('')}</div></div><div class="amt green">+${fmt(cc.net)}</div><span class="pen">${ic('right')}</span></div>`; }).join('') || '<div class="empty" style="padding:14px">No payday this month.</div>'}</div>
       <div class="list" style="padding:12px 16px"><div class="brow" style="padding:0;border:0"><span><b>Your usual week</b><br><span class="mut" style="font-size:13px">${schedText(p)}</span></span><button class="btn soft" data-sched style="width:auto;margin:0;padding:10px 16px">Change</button></div></div>
       <div class="list" style="padding:0"><details class="more" style="margin:0"><summary style="padding:12px 16px">Your pay, explained</summary><div style="margin-top:-12px">${explainHTML(p)}</div></details></div>
-      <div class="list" style="padding:0"><details class="more" style="margin:0"><summary style="padding:12px 16px">Real pay stubs (${(p.stubs || []).length})</summary>${stubsHTML(p)}<div class="form"><button class="btn soft" data-stub>${ic('add')}Add a stub</button></div></details></div>
+      <div class="list" style="padding:0"><details class="more" style="margin:0"><summary style="padding:12px 16px">Real pay stubs (${(p.stubs || []).length})</summary>${stubsHTML(p)}<div class="form">${readerOn() ? `<button class="btn" data-read>${ic('add')}Read a new pay stub</button>` : ''}<button class="btn soft" data-stub>${ic('edit')}Type one in by hand</button></div></details></div>
       <div style="height:20px"></div>`;
     const q = s => el.querySelector(s);
     el.querySelectorAll('[data-cm]').forEach(b => b.onclick = () => { calM = mShift(calM, +b.dataset.cm); draw(); });
@@ -973,6 +975,7 @@ function openPay(id) {
     q('[data-sched]').onclick = () => scheduleSheet(id);
     el.querySelectorAll('[data-stubi]').forEach(b => b.onclick = () => stubForm(id, +b.dataset.stubi));
     q('[data-stub]').onclick = () => stubForm(id);
+    if (q('[data-read]')) q('[data-read]').onclick = () => openReader(id);
   };
   el._draw = draw; draw();
   return el;
@@ -1302,6 +1305,169 @@ function paySettings(id) {
   };
 }
 
+/* ---------- READ A PAY STUB OR BANK STATEMENT (AI) ---------- */
+// The phone sends the files to our reader (a small Cloudflare server that asks Claude to read them). Nothing is
+// kept there; only the numbers come back, and she checks them on a review screen before anything is saved.
+const readerOn = () => !!(window.MT_API && MT_API.url);
+const slug = s => String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 24) || uid();
+function fileToB64(f) {
+  return new Promise((ok, bad) => {
+    if (f.type === 'application/pdf') { const r = new FileReader(); r.onload = () => ok({type: 'application/pdf', data: String(r.result).split(',')[1]}); r.onerror = bad; r.readAsDataURL(f); return; }
+    // photos: shrink to a size the reader needs (sharp enough for small print, much faster to send)
+    const img = new Image(), url = URL.createObjectURL(f);
+    img.onload = () => {
+      const k = Math.min(1, 2400 / Math.max(img.width, img.height)), c = document.createElement('canvas');
+      c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(url);
+      ok({type: 'image/jpeg', data: c.toDataURL('image/jpeg', 0.88).split(',')[1]});
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); bad(new Error('photo')); };
+    img.src = url;
+  });
+}
+function openReader(focusPayId) {
+  if (!readerOn()) { toast('Reading documents isn\'t set up in this version'); return; }
+  let picked = [];
+  const el = sheet('Read my documents', `<div class="form">
+    <div class="big" style="margin:12px 0 0;text-align:left"><b style="font-size:19px">Let the app fill things in for you</b>
+      <div class="hint" style="margin-top:6px">Pick <b>1 to 3 recent pay stubs</b> (sets up your Paycheck: rate, paydays, overtime, every deduction and tax) and/or a <b>bank statement</b> (finds your paychecks and monthly bills for the Budget). PDFs or clear photos.</div></div>
+    <input type="file" id="rdIn" accept="application/pdf,image/*" multiple style="display:none">
+    <button class="btn" id="rdPick">${ic('add')}Choose files</button>
+    <div id="rdList" class="hint" style="margin-top:8px"></div>
+    <button class="btn" id="rdGo" style="display:none">${ic('check')}Read them</button>
+    <div class="summary" id="rdMsg" style="display:none"></div>
+    <div class="hint" style="margin-top:16px">Your files are sent securely to be read by AI (Anthropic's Claude) and aren't stored; only the numbers come back to this phone. You'll check everything before it's saved.</div>
+  </div>`, {icon: 'calc'});
+  const q = s => el.querySelector(s);
+  q('#rdPick').onclick = () => q('#rdIn').click();
+  q('#rdIn').onchange = () => {
+    picked = [...q('#rdIn').files].slice(0, 4);
+    q('#rdList').innerHTML = picked.length ? picked.map(f => `&bull; ${esc(f.name)} (${Math.max(1, Math.round(f.size / 1024))} KB)`).join('<br>') : '';
+    q('#rdGo').style.display = picked.length ? '' : 'none';
+    q('#rdPick').innerHTML = `${ic('add')}${picked.length ? 'Choose different files' : 'Choose files'}`;
+  };
+  q('#rdGo').onclick = async () => {
+    const msg = q('#rdMsg'); msg.style.display = ''; msg.textContent = 'Reading… this usually takes 15 to 40 seconds.';
+    q('#rdGo').disabled = q('#rdPick').disabled = true; q('#rdGo').style.opacity = .6;
+    const again = t => { msg.textContent = t; q('#rdGo').disabled = q('#rdPick').disabled = false; q('#rdGo').style.opacity = 1; };
+    try {
+      const files = await Promise.all(picked.map(fileToB64));
+      const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), 150000);
+      const res = await fetch(MT_API.url, {method: 'POST', signal: ctl.signal, headers: {'content-type': 'application/json', 'x-app-key': MT_API.key}, body: JSON.stringify({files})});
+      clearTimeout(timer);
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok || !d.ok) return again(d.error || 'That didn\'t work. Check the internet and try again.');
+      closeTop(); setTimeout(() => reviewRead(d.result, focusPayId), 260);
+    } catch (e) { again(e && e.name === 'AbortError' ? 'That took too long. Try fewer pages at once.' : 'That didn\'t work. Check the internet and try again.'); }
+  };
+}
+// Turn what was read into a pay setup (same shape as Pay settings).
+function payFromStubs(stubs, oldPay) {
+  const s0 = stubs[0], p = Object.assign(defPay(), JSON.parse(JSON.stringify(oldPay && oldPay.v === 2 ? {sched: oldPay.sched, days: oldPay.days, dayPto: oldPay.dayPto, extra: oldPay.extra, holidays: oldPay.holidays, plans: oldPay.plans} : {})));
+  p.rate = num(s0.hourly_rate);
+  p.every = s0.pay_frequency === 'weekly' ? 7 : 14;
+  p.start = s0.pay_period_start || p.start;
+  p.lag = s0.pay_period_end && s0.check_date ? Math.max(0, dBetween(s0.pay_period_end, s0.check_date)) : 6;
+  const premId = n => /weekend/i.test(n) ? 'wknd' : 'pr-' + slug(n);
+  const prem = {};
+  for (const s of stubs) for (const x of s.premium_hours || []) if (num(x.rate_per_hour)) prem[premId(x.name)] = prem[premId(x.name)] || {id: premId(x.name), name: x.name.replace(/\s+premium$/i, '') + ' premium', rate: num(x.rate_per_hour)};
+  p.prem = Object.values(prem);
+  if (!p.prem.some(x => x.id === 'wknd')) p.prem.unshift({id: 'wknd', name: 'Weekend premium', rate: 0});
+  const paid = [{id: 'hol', name: 'Holiday', rate: 0}, {id: 'pto', name: 'Paid time off', rate: 0}, {id: 'sick', name: 'Sick', rate: 0}];
+  for (const s of stubs) for (const o of s.other_paid_hours || []) {
+    if (o.kind === 'on_call' && !paid.some(x => x.id === 'oncall')) paid.push({id: 'oncall', name: 'On call', rate: num(o.rate_per_hour), rr: true});
+    if (o.kind === 'other' && o.name && !paid.some(x => x.name === o.name)) paid.push({id: 'pd-' + slug(o.name), name: o.name, rate: num(o.rate_per_hour) === num(s0.hourly_rate) ? 0 : num(o.rate_per_hour)});
+  }
+  p.paid = paid;
+  p.pre = (s0.pre_tax || []).filter(d => num(d.amount)).map(d => ({id: 'pre-' + slug(d.name), name: d.name, mode: num(d.percent_of_gross) ? 'pct' : 'amt', val: num(d.percent_of_gross) || num(d.amount), fica: !!d.lowers_fica, ins: !!d.insurance, no3: false}));
+  p.post = (s0.post_tax || []).filter(d => num(d.amount)).map(d => ({id: 'post-' + slug(d.name), name: d.name, mode: 'amt', val: num(d.amount), ins: !!d.insurance, no3: false}));
+  p.imputed = num(s0.imputed_income);
+  const status = {married_jointly: 'mfj', head_of_household: 'hoh', single: 'single'}[s0.w4_filing_status] || 'single';
+  p.fed = {status, step2: false, deps: num(s0.w4_dependents_amount), extra: num(s0.w4_extra_withholding)};
+  // The stub never shows the W-4 "two jobs" box; pick whichever setting reproduces the federal tax actually taken.
+  if (num(s0.taxable_federal)) {
+    const per = perYear(p), off = st => Math.abs(fedWithhold(num(s0.taxable_federal), per, Object.assign({}, p.fed, {step2: st})) - num(s0.tax_federal));
+    p.fed.step2 = off(true) < off(false);
+  }
+  p.state = {name: (s0.state_code ? s0.state_code.toUpperCase() + ' ' : '') + 'state tax', pct: num(s0.taxable_state) ? Math.round(num(s0.tax_state) / num(s0.taxable_state) * 10000) / 100 : 0};
+  // every stub becomes a "real pay stub" the calculator checks itself against
+  p.stubs = stubs.map(s => {
+    const weeks = (s.weeks || []).slice(0, weeksIn(p)), w = weeks.map(x => num(x.hours_worked)), pr = {};
+    for (const x of s.premium_hours || []) { const i = weeks.findIndex(k => k.week_start === x.week_start); const id = premId(x.name); pr[id] = pr[id] || Array(w.length).fill(0); if (i >= 0) pr[id][i] += num(x.hours); }
+    const pd2 = {};
+    for (const o of s.other_paid_hours || []) { const id = {holiday: 'hol', pto: 'pto', sick: 'sick', on_call: 'oncall'}[o.kind] || ('pd-' + slug(o.name)); pd2[id] = (pd2[id] || 0) + num(o.hours); }
+    const back = num(s.adjustments_amount) + num(s.bonus_amount);
+    return {check: s.check_date, start: s.pay_period_start, w, prem: pr, paid: pd2, bonus: back, bonusName: num(s.adjustments_amount) ? 'Corrections from an earlier check' : 'Bonus', gross: num(s.gross_pay), net: num(s.net_pay), note: ''};
+  }).filter(s => s.check && s.net);
+  for (const s of (oldPay && oldPay.stubs) || []) if (!p.stubs.some(x => x.check === s.check)) p.stubs.push(s);
+  return p;
+}
+function reviewRead(r, focusPayId) {
+  const stubs = (r.pay_stubs || []).filter(s => num(s.hourly_rate) || num(s.net_pay)).sort((a, b) => String(b.check_date).localeCompare(String(a.check_date)));
+  const bills = (r.bank_bills || []).filter(b => num(b.amount) && b.frequency !== 'once');
+  const pays = (r.bank_paychecks || []).filter(x => num(x.amount) && x.date);
+  const payT = (focusPayId && tileOf(focusPayId)) || S.tiles.find(t => t.kind === 'pay');
+  const budT = S.tiles.find(t => t.kind === 'check'), earnT = earnTile();
+  const np = stubs.length ? payFromStubs(stubs, payT && payT.pay) : null;
+  const hasIns = np && [...np.pre, ...np.post].some(d => d.ins);
+  const cmp = np ? np.stubs.slice(0, 3).map(s => ({s, c: payFor(np, s)})) : [];
+  const row = (k, v) => `<div class="xrow"><span>${k}</span><b>${v}</b></div>`;
+  const known = new Set(S.items.filter(i => budT && i.tile === budT.id).map(i => (i.name || '').toLowerCase()));
+  const el = sheet('Here\'s what we found', `<div class="form">
+    ${!stubs.length && !bills.length && !pays.length ? `<div class="empty">Nothing usable came back. Try a clearer photo or the PDF from your payroll site.</div>` : ''}
+    ${np ? `<div class="list" style="margin:12px 0 0;padding:12px 16px">
+      <div style="font-weight:800;margin-bottom:4px">Your pay${stubs[0].employer ? ' · ' + esc(stubs[0].employer) : ''}</div>
+      ${row('Hourly rate', fmt(np.rate) + '/hr')}${row('Paid', np.every === 7 ? 'every week' : 'every 2 weeks')}
+      ${row('Pay period', `${shortD(stubs[0].pay_period_start)} – ${shortD(stubs[0].pay_period_end)}`)}${row('Payday', dayH(stubs[0].check_date))}
+      ${np.prem.filter(x => num(x.rate)).map(x => row(esc(x.name), '+' + fmt(x.rate) + '/hr')).join('')}
+      ${np.paid.filter(x => num(x.rate)).map(x => row(esc(x.name), fmt(x.rate) + '/hr')).join('')}
+      <div class="xh">Before taxes</div>${np.pre.map(d => row(esc(d.name), d.mode === 'pct' ? d.val + '%' : fmt(d.val))).join('') || '<div class="hint">None</div>'}
+      <div class="xh">Taxes</div><div class="xrow"><span>Federal W-4</span><b style="white-space:normal;text-align:right">${{mfj: 'Married', hoh: 'Head of household', single: 'Single'}[np.fed.status]}${np.fed.step2 ? ', two-jobs box' : ''}${np.fed.deps ? ', ' + fmt(np.fed.deps) + ' dependents' : ''}</b></div>${np.state.pct ? row(esc(np.state.name), np.state.pct + '%') : ''}
+      <div class="xh">After taxes</div>${np.post.map(d => row(esc(d.name), fmt(d.val))).join('') || '<div class="hint">None</div>'}
+      ${pay3(np) && hasIns ? `<label class="inl" style="margin-top:10px;font-weight:700"><input type="checkbox" id="rvNo3" style="width:20px;height:20px;accent-color:var(--rg)">Insurance only comes out of 2 checks a month (a 3rd paycheck skips it)</label>` : ''}
+      ${r.notes ? `<div class="hint" style="margin-top:8px">${esc(r.notes)}</div>` : ''}
+      <div class="xh">Checked against your stub${cmp.length > 1 ? 's' : ''}</div>
+      ${cmp.map(({s, c}) => { const d = r2(num(s.net) - c.net); return `<div class="xrow"><span>${shortD(s.check)}: real ${fmt(s.net)}</span><b class="${Math.abs(d) <= 2 ? 'green' : 'red'}">${Math.abs(d) <= 1 ? 'spot on' : 'off by ' + fmt(Math.abs(d))}</b></div>`; }).join('')}
+      ${payT && payT.pay && num(payT.pay.rate) ? `<div class="hint">This replaces your current pay settings. The hours you've planned on the calendar stay.</div>` : ''}
+    </div>` : ''}
+    ${pays.length && earnT ? `<div class="list" style="margin:12px 0 0;padding:12px 16px"><div style="font-weight:800">Paychecks in the statement</div>
+      ${pays.map((x, i) => `<label class="tilerow" style="padding-left:0"><span style="flex:1">${dayH(x.date)}${x.from ? ' · ' + esc(x.from) : ''}<br><b class="green">+${fmt(x.amount)}</b></span><input type="checkbox" data-pc="${i}" ${S.items.some(it => it.tile === earnT.id && it.date === x.date && Math.abs(it.amt - num(x.amount)) < .01) ? 'disabled' : 'checked'}></label>`).join('')}
+      <div class="hint">Ticked ones are added to ${esc(earnT.name)} (ones already there are greyed out).</div></div>` : ''}
+    ${bills.length && budT ? `<div class="list" style="margin:12px 0 0;padding:12px 16px"><div style="font-weight:800">Bills that repeat</div>
+      ${bills.map((b, i) => `<label class="tilerow" style="padding-left:0"><span style="flex:1">${esc(b.name)}<br><span class="mut" style="font-size:13px">${fmt(b.amount)} · ${b.frequency === 'every_2_weeks' ? 'every 2 weeks' : b.frequency === 'weekly' ? 'weekly' : b.frequency === 'yearly' ? 'yearly' : 'monthly'}${num(b.day_of_month) ? ' · around the ' + ord(num(b.day_of_month)) : ''}</span></span><input type="checkbox" data-bill="${i}" ${known.has(String(b.name).toLowerCase()) ? '' : 'checked'}></label>`).join('')}
+      <div class="hint">Ticked ones are added to ${esc(budT.name)} as repeating bills. Untick anything that isn't a bill.</div></div>` : ''}
+    <button class="btn" id="rvSave">${ic('check')}Save</button>
+    <div class="hint" style="text-align:center">You can change anything later: Pay settings, or the pencil on any bill.</div>
+  </div>`, {icon: 'calc'});
+  const q = s => el.querySelector(s);
+  q('#rvSave').onclick = () => {
+    let msg = [];
+    if (np && payT) {
+      if (q('#rvNo3') && q('#rvNo3').checked) for (const d of [...np.pre, ...np.post]) if (d.ins) d.no3 = true;
+      np.fix3 = true; payT.pay = np; payT.hidden = false; msg.push('pay set up');
+    } else if (np && !payT) {
+      S.tiles.push({id: uid(), name: 'Paycheck', kind: 'pay', icon: 'calc', pay: Object.assign(np, {fix3: true})}); msg.push('Paycheck tile added');
+    }
+    if (earnT) { let n = 0; el.querySelectorAll('[data-pc]').forEach(c => { if (!c.checked || c.disabled) return; const x = pays[+c.dataset.pc]; S.items.push({id: uid(), tile: earnT.id, name: 'Paycheck', amt: r2(num(x.amount)), date: x.date, rep: null, note: x.from || 'From a bank statement', done: {}, skip: {}}); n++; }); if (n) msg.push(`${n} paycheck${n > 1 ? 's' : ''}`); }
+    if (budT) {
+      let n = 0;
+      el.querySelectorAll('[data-bill]').forEach(c => {
+        if (!c.checked) return; const b = bills[+c.dataset.bill];
+        const f = {every_2_weeks: '2week', weekly: 'week', yearly: 'year'}[b.frequency] || 'month';
+        let date = b.last_date && /^\d{4}-\d\d-\d\d$/.test(b.last_date) ? b.last_date : '';
+        if (!date) { const t = pd(today()); date = iso(new Date(t.getFullYear(), t.getMonth(), Math.min(28, Math.max(1, num(b.day_of_month) || 1)))); }
+        S.items.push({id: uid(), tile: budT.id, name: b.name, amt: r2(num(b.amount)), date, rep: {f, end: 'never'}, note: 'From a bank statement', done: {[date]: !!b.last_date}, skip: {}}); n++;
+      });
+      if (n) msg.push(`${n} bill${n > 1 ? 's' : ''}`);
+    }
+    save(); syncPredictions(); closeAll(); refresh();
+    toast(msg.length ? 'Added: ' + msg.join(', ') : 'Nothing was added');
+    if (np) { const t = S.tiles.find(x => x.kind === 'pay' && x.pay === np) || payT; if (t) setTimeout(() => openPay(t.id), 300); }
+  };
+}
+// does this pay schedule ever give 3 checks in a month? (only then is the insurance question worth asking)
+const pay3 = p => (num(p.every) || 14) === 14;
+
 /* ---------- UPDATES ---------- */
 // The phone app asks GitHub for the newest release; Android installs it only if it's signed with the same key.
 const ver = () => (window.Native && Native.versionName) ? Native.versionName() : 'web';
@@ -1414,6 +1580,7 @@ function openSettings() {
       <div class="hint">Hidden tiles keep everything in them; tick them to bring them back. Add new tiles with "Add a tile" on the home screen.</div></div>
     <div class="fld"><label>Currency</label><div class="chips" id="sCur">${cur.map(c => `<button data-c="${esc(c)}" class="${S.currency === c ? 'on' : ''}">${esc(c)}</button>`).join('')}</div></div>
     <div class="list" style="margin:18px 0 0">
+      ${readerOn() ? `<button class="setrow" id="sRead">${ic('add')}<span>Read a pay stub or bank statement</span></button>` : ''}
       <button class="setrow" id="sCsv">${ic('dl')}<span>Export this year to a spreadsheet (CSV)</span></button>
       <button class="setrow" id="sBak">${ic('backup')}<span>Back up my data</span></button>
       <button class="setrow" id="sRes">${ic('restore')}<span>Restore or import a file</span></button>
@@ -1432,6 +1599,7 @@ function openSettings() {
     q('#sBP').onclick = () => { for (const t of S.tiles) t.hidden = !(t.kind === 'check' || t.kind === 'pay'); save(); tilesSync(); refresh(); toast('Showing just Budget and Paycheck'); };
     q('#sAll').onclick = () => { for (const t of S.tiles) t.hidden = false; save(); tilesSync(); refresh(); toast('Showing every tile'); };
     q('#sCsv').onclick = exportCSV;
+    if (q('#sRead')) q('#sRead').onclick = () => openReader();
     q('#sBak').onclick = () => saveFile(`money-tiles-backup-${stamp()}.json`, JSON.stringify(S), 'application/json');
     q('#sRes').onclick = restore;
     q('#sUpd').onclick = () => checkUpdate(true);
