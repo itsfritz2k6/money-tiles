@@ -10,6 +10,8 @@ set -a; . ~/.config/fritz/.env; set +a
 export JAVA_HOME=$A/jdk ANDROID_HOME=$A/sdk GRADLE_USER_HOME=$A/gradle PATH=$A/jdk/bin:$PATH
 cd ~/isavemoney-app
 rm -f "$SEED"; trap 'rm -f "$SEED"' EXIT
+# the document reader's address + app key (from the private keys file, never committed)
+printf 'window.MT_API = {url: "https://money-tiles-api.itsfritzink.workers.dev/read", key: "%s"};\n' "${MONEY_TILES_APP_KEY:-}" > app/src/main/assets/config.js
 OUT=MoneyTiles.apk
 if [ "${1:-}" = alta ]; then cp "$PRIV/seed.js" "$SEED"; OUT="$PRIV/MoneyTiles-Alta.apk"; fi
 ./gradlew assembleRelease --no-daemon -q
