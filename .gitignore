@@ -6,3 +6,4 @@ app/build/
 build.log
 local.properties
 app/src/main/assets/seed.js
+app/src/main/assets/config.js
