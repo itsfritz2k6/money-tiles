@@ -346,6 +346,14 @@ public class MainActivity extends Activity {
             runOnUiThread(() -> { try { startActivity(new Intent(Intent.ACTION_VIEW, u)); } catch (Exception e) { toast("No browser found"); } });
         }
 
+        /** Gift links can come from any store (and affiliate links redirect through other hosts), so any https link. */
+        @JavascriptInterface
+        public void openLink(String url) {
+            Uri u = Uri.parse(url);
+            if (!"https".equals(u.getScheme())) return;
+            runOnUiThread(() -> { try { startActivity(new Intent(Intent.ACTION_VIEW, u)); } catch (Exception e) { toast("No browser found"); } });
+        }
+
         /** Fallback: let the browser download the new version and Android's own installer handle it. */
         @JavascriptInterface
         public void openDownload(String url) {
