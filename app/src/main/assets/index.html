@@ -250,6 +250,13 @@ details.more summary{color:var(--rg);font-weight:800;padding:6px 0;cursor:pointe
 .mc .hl{font-style:normal;font-size:8.5px;font-weight:800;color:var(--rg)}
 .mw{display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:10px;background:#fff;border:1px solid var(--line)}
 .mw b{font-size:13.5px;font-weight:800} .mw small{font-size:9.5px;color:var(--mut);font-weight:700}
+.mw small.ptos{color:var(--rg)}
+.mc .hl.pto{font-size:8px;white-space:nowrap}
+.wsf{margin-top:6px;font-size:13.5px;line-height:1.45}
+.wsf .pb{height:8px;margin-bottom:6px}
+.wsf .mut{font-size:12.5px}
+.stepper.sm2 input{width:80px;font-size:26px}
+.stepper.sm2 button{width:44px;height:44px;font-size:24px}
 .mw.ot{border-color:#BFE3CC;background:#F1FAF4} .mw.ot small{color:var(--green)}
 .card2{background:#fff;border:1px solid var(--line);border-radius:18px;padding:14px;margin-top:18px}
 </style>
@@ -860,7 +867,8 @@ const holidaysIn = (p, per) => (p.holidays || []).filter(h => h.date >= per.star
 const SCHED0 = [0, 8, 8, 8, 8, 8, 0];
 const schedOf = p => Array.isArray(p.sched) && p.sched.length === 7 ? p.sched : SCHED0;
 const dayHours = (p, d) => p.days && p.days[d] != null ? num(p.days[d]) : num(schedOf(p)[pd(d).getDay()]);
-const changedDay = (p, d) => !!(p.days && p.days[d] != null && num(p.days[d]) !== num(schedOf(p)[pd(d).getDay()]));
+const ptoOn = (p, d) => num((p.dayPto || {})[d]);
+const changedDay = (p, d) => !!(p.days && p.days[d] != null && num(p.days[d]) !== num(schedOf(p)[pd(d).getDay()])) || !!ptoOn(p, d);
 function periodAt(p, d) {
   const days = num(p.every) || 14, k = Math.floor(dBetween(p.start, d) / days), start = addDays(p.start, k * days), end = addDays(start, days - 1);
   return {start, end, payday: addDays(end, num(p.lag))};
@@ -911,24 +919,26 @@ function openPay(id) {
     const hols = Object.fromEntries((p.holidays || []).map(x => [x.date, x]));
     let rows = '';
     for (let ws = gStart; ws <= gEnd; ws = addDays(ws, 7)) {
-      let wk = 0, cells = '';
+      let wk = 0, wkPto = 0, cells = '';
       for (let i = 0; i < 7; i++) {
-        const d = addDays(ws, i), hh = dayHours(p, d), x = pd(d), out = d.slice(0, 7) !== calM, pay = pays[d];
-        wk += hh;
+        const d = addDays(ws, i), hh = dayHours(p, d), x = pd(d), out = d.slice(0, 7) !== calM, pay = pays[d], pto = ptoOn(p, d);
+        wk += hh; wkPto += pto;
         const par = Math.floor(dBetween(p.start, d) / days) % 2 ? 'p1' : 'p0';
         cells += `<button class="mc ${par} ${out ? 'out' : ''} ${d === t0 ? 'today' : ''} ${d < t0 ? 'past' : ''} ${changedDay(p, d) ? 'chg' : ''} ${pay ? 'pay' : ''}" data-day="${d}">
-          <span class="mn">${x.getDate()}</span><b>${hh ? r2(hh) : '·'}</b>${pay ? '<i class="pin">$</i>' : hols[d] ? '<i class="hl">HOL</i>' : num((p.dayPto || {})[d]) ? '<i class="hl">PTO</i>' : ''}</button>`;
+          <span class="mn">${x.getDate()}</span><b>${hh ? r2(hh) : pto ? '–' : '·'}</b>${pay ? '<i class="pin">$</i>' : ''}${pto ? `<i class="hl pto">+${r2(pto)} PTO</i>` : hols[d] ? '<i class="hl">HOL</i>' : ''}</button>`;
       }
       const ot = Math.max(0, wk - cap);
-      rows += cells + `<div class="mw ${ot ? 'ot' : ''}"><b>${r2(wk)}</b>${ot ? `<small>+${r2(ot)} OT</small>` : '<small>hrs</small>'}</div>`;
+      // worked hours only count toward overtime; PTO is listed under them
+      rows += cells + `<div class="mw ${ot ? 'ot' : ''}"><b>${r2(wk)}</b>${ot ? `<small>+${r2(ot)} OT</small>` : wk ? `<small>${r2(cap - wk)} to OT</small>` : '<small>hrs</small>'}${wkPto ? `<small class="ptos">+${r2(wkPto)} PTO</small>` : ''}</div>`;
     }
     const monthPays = paydaysIn(p, calM);
     el.querySelector('.sb').innerHTML = `
       <div class="big"><small>Next payday · ${dayH(next.payday)}</small><b class="green">+${fmt(nc.net)}</b>
         <small>for ${shortD(next.start)} – ${shortD(next.end)} · ${hrs(nc.worked)}${nc.ot ? ` · ${hrs(nc.ot)} overtime` : ''}${planFor(p, next).third ? ' · no insurance this one' : ''}</small>
         <button class="btn soft" data-check="${next.start}" style="margin-top:10px">See every line of this check</button></div>
-      <div class="list quick"><div><b>Today · ${dayH(t0)}</b><span>${hrs(dayHours(p, t0))}</span></div>
-        <div class="chips" style="margin-top:8px"><button data-add="-1">${MINUS}1 hr</button><button data-add="1">+1 hr</button><button data-add="2">+2 hrs</button><button data-add="4">+4 hrs</button><button data-day="${t0}">Type it</button></div></div>
+      <div class="list quick"><div><b>Today · ${dayH(t0)}</b><span>${hrs(dayHours(p, t0))}${ptoOn(p, t0) ? ` + ${r2(ptoOn(p, t0))} PTO` : ''}</span></div>
+        ${weekSoFarHTML(p, t0, cap)}
+        <div class="chips" style="margin-top:8px"><button data-add="-1">${MINUS}1 hr</button><button data-add="1">+1 hr</button><button data-add="2">+2 hrs</button><button data-add="4">+4 hrs</button><button data-day="${t0}">Type it</button><button data-pto="${t0}">Use PTO</button></div></div>
       <div class="list mcal">
         <div class="mhead"><button class="ib" data-cm="-1">${ic('left')}</button><b>${MON[mo - 1]} ${y}</b><button class="ib" data-cm="1">${ic('right')}</button></div>
         <div class="mgrid">${['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(d => `<span class="mdw">${d}</span>`).join('')}<span class="mdw">Week</span>${rows}</div>
@@ -944,6 +954,7 @@ function openPay(id) {
     const q = s => el.querySelector(s);
     el.querySelectorAll('[data-cm]').forEach(b => b.onclick = () => { calM = mShift(calM, +b.dataset.cm); draw(); });
     el.querySelectorAll('[data-day]').forEach(b => b.onclick = () => dayEditor(id, b.dataset.day));
+    el.querySelectorAll('[data-pto]').forEach(b => b.onclick = () => dayEditor(id, b.dataset.pto, 'pto'));
     el.querySelectorAll('[data-check]').forEach(b => b.onclick = () => checkSheet(id, b.dataset.check));
     el.querySelectorAll('[data-add]').forEach(b => b.onclick = () => {
       const v = Math.max(0, dayHours(p, t0) + +b.dataset.add); p.days = p.days || {}; p.days[t0] = v;
@@ -957,6 +968,16 @@ function openPay(id) {
   return el;
 }
 // One paycheck in full: its two weeks of hours and every line of the check.
+// This Sun–Sat week up to today: hours worked so far, and how far from (or into) overtime.
+function weekSoFarHTML(p, t0, cap) {
+  const ws = addDays(t0, -pd(t0).getDay());
+  let so = 0, plan = 0, pto = 0;
+  for (let i = 0; i < 7; i++) { const d = addDays(ws, i), h = dayHours(p, d); plan += h; pto += ptoOn(p, d); if (d <= t0) so += h; }
+  const left = r2(cap - so), planOT = r2(Math.max(0, plan - cap));
+  return `<div class="wsf"><div class="pb"><i style="width:${Math.min(100, so / cap * 100)}%"></i></div>
+    <div>${so < cap ? `This week so far: <b>${hrs(so)}</b> worked · <b>${hrs(left)}</b> until overtime` : `This week so far: <b>${hrs(so)}</b> worked · <b class="green">${hrs(so - cap)} overtime</b>`}</div>
+    <div class="mut">${planOT ? `Planned for the week: ${hrs(plan)}, so ${hrs(planOT)} overtime.` : `Planned for the week: ${hrs(plan)}.`}${pto ? ` Plus ${hrs(pto)} PTO, which doesn't count toward the ${cap}.` : ''}</div></div>`;
+}
 function checkSheet(id, start) {
   const p = tileOf(id).pay, per = periodAt(p, start), pl = planFor(p, per), c = payFor(p, pl), cap = num(p.otAfter) || 40;
   const wk = pl.w.map((h, i) => `<div class="brow"><span>Week ${i + 1} · ${shortD(addDays(per.start, 7 * i))} – ${shortD(addDays(per.start, 7 * i + 6))}</span><b>${hrs(h)}${h > cap ? ` <span class="green">(${hrs(h - cap)} OT)</span>` : ''}</b></div>`).join('');
@@ -975,29 +996,34 @@ function stubsHTML(p) {
   return stubs.map(s => { const cc = payFor(p, s), d = r2(num(s.net) - cc.net);
     return `<div class="row" data-stubi="${p.stubs.indexOf(s)}"><div class="bub in">${ic('check')}</div><div class="mid"><div class="nm">${dayH(s.check)}</div><div class="sub"><span>Real ${fmt(s.net)} · app ${fmt(cc.net)}</span>${s.note ? `<span>${esc(s.note)}</span>` : ''}</div></div><div class="amt ${Math.abs(d) <= 5 ? 'green' : 'red'}" style="font-size:13px">${Math.abs(d) <= 1 ? 'spot on' : 'off ' + fmt(Math.abs(d))}</div></div>`; }).join('');
 }
-function dayEditor(id, d) {
+function dayEditor(id, d, focus) {
   const p = tileOf(id).pay, usual = num(schedOf(p)[pd(d).getDay()]), holx = (p.holidays || []).find(x => x.date === d);
-  let v = dayHours(p, d);
   const el = pop(`<h3>${dayH(d)}</h3><div class="form" style="padding-top:0">
-    <div class="stepper"><button data-s="-0.25">${MINUS}</button><input id="dH" inputmode="decimal" value="${r2(v)}"><span>hrs</span><button data-s="0.25">+</button></div>
-    <div class="chips" style="justify-content:center;margin-top:10px">${[0, 4, 8, 10, 12].map(n => `<button data-n="${n}">${n ? n + ' hrs' : 'Day off'}</button>`).join('')}</div>
+    <div class="xh" style="text-align:center">Hours worked</div>
+    <div class="stepper"><button data-s="-0.25" data-t="dH">${MINUS}</button><input id="dH" inputmode="decimal" value="${r2(dayHours(p, d))}"><span>hrs</span><button data-s="0.25" data-t="dH">+</button></div>
+    <div class="chips" style="justify-content:center;margin-top:10px">${[0, 4, 8, 10, 12].map(n => `<button data-n="${n}">${n ? n + ' hrs' : 'Off'}</button>`).join('')}</div>
+    <div class="xh" style="text-align:center;margin-top:18px">PTO / sick hours</div>
+    <div class="stepper sm2"><button data-s="-1" data-t="dP">${MINUS}</button><input id="dP" inputmode="decimal" value="${r2(ptoOn(p, d))}"><span>hrs</span><button data-s="1" data-t="dP">+</button></div>
+    <div class="hint" style="text-align:center">PTO is paid at your normal rate, but it doesn't count toward the ${num(p.otAfter) || 40} hours, so it never turns into overtime.</div>
+    <button class="btn soft" id="dPtoDay" style="margin-top:10px">Day off with PTO (${hrs(usual || 8)})</button>
     ${holx ? `<div class="summary">${esc(holx.name)}: you also get ${hrs(num(holx.h) || 8)} of holiday pay, on top of the hours you work (double pay).</div>` : ''}
-    <details class="more"><summary>Paid time off or sick hours</summary><div class="fld"><input id="dP" inputmode="decimal" value="${num((p.dayPto || {})[d]) || ''}" placeholder="0"></div></details>
     <button class="btn" id="dSave">${ic('check')}Save</button>
-    ${changedDay(p, d) ? `<button class="btn soft" id="dReset">Back to usual (${usual ? hrs(usual) : 'day off'})</button>` : ''}
+    ${changedDay(p, d) ? `<button class="btn soft" id="dReset">Back to usual (${usual ? hrs(usual) : 'day off'}, no PTO)</button>` : ''}
   </div>`);
-  const inp = el.querySelector('#dH');
-  el.querySelectorAll('[data-s]').forEach(b => b.onclick = () => { inp.value = r2(Math.max(0, num(inp.value) + +b.dataset.s)); });
-  el.querySelectorAll('[data-n]').forEach(b => b.onclick = () => { inp.value = b.dataset.n; });
+  const q = s => el.querySelector(s);
+  el.querySelectorAll('[data-s]').forEach(b => b.onclick = () => { const i = q('#' + b.dataset.t); i.value = r2(Math.max(0, num(i.value) + +b.dataset.s)); });
+  el.querySelectorAll('[data-n]').forEach(b => b.onclick = () => { q('#dH').value = b.dataset.n; });
+  q('#dPtoDay').onclick = () => { q('#dH').value = 0; q('#dP').value = r2(usual || 8); };
+  if (focus === 'pto') setTimeout(() => { q('#dP').focus(); q('#dP').select(); }, 250);
   const done = msg => { save(); syncPredictions(); closeTop(); refresh(); toast(msg); };
-  el.querySelector('#dSave').onclick = () => {
-    const nv = r2(num(inp.value)), pto = num(el.querySelector('#dP').value);
+  q('#dSave').onclick = () => {
+    const nv = r2(num(q('#dH').value)), pto = r2(num(q('#dP').value));
     p.days = p.days || {}; p.dayPto = p.dayPto || {};
     if (nv === usual) delete p.days[d]; else p.days[d] = nv;
     if (pto) p.dayPto[d] = pto; else delete p.dayPto[d];
-    done(`${shortD(d)}: ${hrs(nv)}`);
+    done(`${shortD(d)}: ${hrs(nv)} worked${pto ? ` + ${hrs(pto)} PTO` : ''}`);
   };
-  if (el.querySelector('#dReset')) el.querySelector('#dReset').onclick = () => { delete p.days[d]; done('Back to your usual hours'); };
+  if (q('#dReset')) q('#dReset').onclick = () => { delete p.days[d]; if (p.dayPto) delete p.dayPto[d]; done('Back to your usual hours'); };
 }
 function scheduleSheet(id) {
   const p = tileOf(id).pay, s = schedOf(p).slice();
