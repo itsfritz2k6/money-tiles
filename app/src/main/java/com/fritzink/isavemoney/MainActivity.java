@@ -100,8 +100,13 @@ public class MainActivity extends Activity {
                 Intent i = new Intent(Intent.ACTION_GET_CONTENT);
                 i.addCategory(Intent.CATEGORY_OPENABLE);
                 i.setType("*/*");
+                // pay stubs / statements: PDFs and photos, several at once
+                String[] accept = p.getAcceptTypes();
+                boolean docs = accept != null && String.join(",", accept).contains("pdf");
+                if (docs) i.putExtra(Intent.EXTRA_MIME_TYPES, new String[]{"application/pdf", "image/*"});
+                i.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, p.getMode() == FileChooserParams.MODE_OPEN_MULTIPLE);
                 try {
-                    startActivityForResult(Intent.createChooser(i, "Choose a backup file"), REQ_FILE);
+                    startActivityForResult(Intent.createChooser(i, docs ? "Choose pay stubs or statements" : "Choose a backup file"), REQ_FILE);
                 } catch (Exception e) {
                     fileCb = null;
                     return false;
@@ -132,8 +137,14 @@ public class MainActivity extends Activity {
     @Override
     protected void onActivityResult(int req, int res, Intent data) {
         if (req == REQ_FILE && fileCb != null) {
-            Uri u = (res == RESULT_OK && data != null) ? data.getData() : null;
-            fileCb.onReceiveValue(u == null ? null : new Uri[]{u});
+            Uri[] picked = null;
+            if (res == RESULT_OK && data != null) {
+                if (data.getClipData() != null) {
+                    picked = new Uri[data.getClipData().getItemCount()];
+                    for (int k = 0; k < picked.length; k++) picked[k] = data.getClipData().getItemAt(k).getUri();
+                } else if (data.getData() != null) picked = new Uri[]{data.getData()};
+            }
+            fileCb.onReceiveValue(picked);
             fileCb = null;
             return;
         }
